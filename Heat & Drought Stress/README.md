@@ -3,9 +3,9 @@
 
 Link to final publication: https://doi.org/10.1094/PBIOMES-07-20-0052-R
 
-Included in this folder are:
+Included in this folder:
 + HeatDroughtStressImpactsonSorghumMicrobiome.Rmd - R markdown file to run analyses and generate figures
-+ hdp_otu_table.biom - an unfiltered OTU table created via DADA2
++ hdp_otu_table.biom - an unfiltered OTU table created via QIIME2
 + HDPMetadata.txt - a table of metadata associated with samples
 + otu.phy - a tree file that corresponds to the feature table
 + phenotypedata.txt - a table of plant phenotypic data
