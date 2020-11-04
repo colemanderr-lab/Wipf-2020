@@ -1,0 +1,635 @@
+---
+title: "Heat and Drought Stress Impacts On the Sorghum Microbiome"
+author: "Edi Wipf"
+date: "10/15/2020"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Scripts for distinguishing between the impacts of heat and drought stress on the root microbiome of Sorghum bicolor.
+## For detailed descriptions of experimental design, results and conclusion, please see the associated publication. https://doi.org/10.1094/PBIOMES-07-20-0052-R
+
+###Abstract:
+###Water deficit and extreme temperatures regularly and considerably reduce crop productivity. While several studies have explored the role of the plant microbiome in drought tolerance, it remains to be determined how the often co-occurring factor of heat conjunctly shapes plant-microbe interactions. In order to compare the roles temperature and drought stress play in plant microbial recruitment, we conducted a growth chamber experiment with a series of temperatures (22°C, 30°C, and 38°C) and watering (drought versus watered) conditions in Sorghum bicolor, sampling soil mixtures and seedling roots at 7 and 21 days post initial stress initiation. We found that bacterial root communities had the lowest alpha diversity when under drought and at 38°C, and that temperature influenced the beta diversity of soil mixture and root microbiomes to a greater extent than watering treatment. Additionally, we observed that the relative abundances of Actinobacteria increased both under drought and incrementally with higher temperatures. Further, unique Actinobacteria were indicator species of either temperature or watered conditions and were one of the top phyla whose indicators are predominantly of high temperatures in watered conditions. Together, these data suggest that heat and drought stress differentially impact microbiome assembly in significant ways and unique Actinobacteria may be recruited under either stress. This work informs our understandings of how abiotic stresses shape crop microbiomes, as well as highlights the need for additional work to describe what mechanisms may be involved in host-mediated microbial recruitment and adaptation under various stresses in field-based studies.
+
+##Intialize working environment
+```{r}
+##load library
+library("phyloseq"); packageVersion("phyloseq")
+library("ggplot2"); packageVersion("ggplot2")
+###Define a default theme for ggplot graphics.
+theme_set(theme_bw())
+library("scales")
+library("grid")
+library("DESeq2")
+library("ape")
+library("vegan")
+library("biom")
+library("plyr")
+library("seqinr")
+library("labdsv")
+library("devtools")
+library("picante")
+
+#set working directory
+setwd()
+```
+##Load phyloseq object
+```{r}
+##load sequencing data
+biom_file = "hdp_otu_table.biom"
+otutax = import_biom(biom_file,parseFunction = parse_taxonomy_greengenes)
+##load metadata
+map_file = "HDPMetadata.txt"
+sam = import_qiime_sample_data(map_file)
+##load phylogenetic tree
+tree_Q = read.tree("otu.phy")
+tree_Q = root(tree_Q, 1, resolve.root = T)
+##combine
+hdp = merge_phyloseq(otutax, sam, tree_Q)
+
+#Filter out taxa whose sum is less than 2 in 2 samples
+filter = filter_taxa((hdp), function(x) sum(x > 2) > 2, TRUE)
+ntaxa(filter)
+#Rarefy to samples to sizes of 10000 operational taxonomic units (OTUs)
+set.seed(79)
+hdp_rare=rarefy_even_depth(filter, sample.size = min(10000),
+                            rngseed = FALSE, replace = TRUE, trimOTUs = TRUE, verbose = TRUE)
+```
+##Subset data for analyses
+```{r}
+#Subset out biological replicates and unclearly labelled samples
+hdp_rare<-subset_samples(hdp_rare, Sample_ID!="S_H2_D_2_5_repRoot_11_28_2018")
+hdp_rare<-subset_samples(hdp_rare, Sample_ID!="S_H2_W_1_1_repRoot_11_14_2018")
+hdp_rare<-subset_samples(hdp_rare, Sample_ID!="S_H2_W_2_2_redoS_11_2018")
+hdp_rare<-subset_samples(hdp_rare, Sample_ID!="S_H1_W_2_3or4_Root_11_28_2018")
+hdp_rare <- subset_samples(hdp_rare, Sample_ID!="Batch7_11_2018")
+
+hd_pil <- subset_samples(hdp_rare, Experiment=="Pilot")
+hd_current <- subset_samples(hdp_rare, Experiment=="Actual")
+unique(sample_data(hd_current)$ST)
+hd_cur <- subset_samples(hd_current, ST!="Mix")
+hd_pre <- subset_samples(hd_current, ST=="Mix") #%in%c("Mix","FieldSoil"))
+
+hdRoot <- subset_samples(hd_cur, SampleType=="Root")
+hdSoil <- subset_samples(hd_cur, SampleType=="Soil")
+hdTP1 <- subset_samples(hd_cur, TimePoint=="1")
+hdTP2 <- subset_samples(hd_cur, TimePoint=="2")
+hdTP1Root <- subset_samples(hdTP1, SampleType=="Root")
+hdTP1Soil <- subset_samples(hdTP1, SampleType=="Soil")
+hdTP2Root <- subset_samples(hdTP2, SampleType=="Root")
+hdTP2Soil <- subset_samples(hdTP2, SampleType=="Soil")
+```
+
+## Main Figures
+###Figure 1. Soil moisture is significantly impacted by drought and temperature.
+```{r}
+#1. 
+ggplot(phenodata, aes(x=Treatment, y=SoilMoisture,fill=Treatment)) +
+  scale_fill_manual(values = c("C.D" = "#a9d3e2", 
+                               "C.W" = "#276982",
+                               "H1.D" = "#fadb8e",
+                               "H1.W" = "#eba944",
+                               "H2.D" = "#F2A69D",
+                               "H2.W" = "#a13536")) +
+  geom_boxplot() +
+  facet_grid(.~Timepoint, scales = "free") +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("SoilMoisture.jpg",width=6,height=6)
+```
+###Figure 2. Temperature and watering treatments differentially impact bacterial alpha diversity. 
+```{r}
+#2a. Boxplots of alpha diversity, as based on Shannon diversity index, for soil mixture samples.
+p <- plot_richness(hdSoil,x="Treatment", measures=c("Shannon")) +
+  geom_point(aes(fill=factor(Treatment)), size=1) +
+  facet_grid(.~TimePoint) +
+  geom_boxplot(aes(fill=factor(Treatment))) +
+  scale_fill_manual(values = c(
+    "." = "#919f70", #Yeabridge Green
+    "C.D" = "#a9d3e2", 
+    "C.W" = "#276982",
+    "H1.D" = "#fadb8e",
+    "H1.W" = "#eba944",
+    "H2.D" = "#F2A69D",
+    "H2.W" = "#a13536"
+  )) +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+p
+ggsave("Shannon_Soil_byTimepointTreatment.jpg",width=8,height=7)
+#2b. Boxplots of alpha diversity, as based on Shannon diversity index, for root samples.
+p <- plot_richness(hdRoot,x="Treatment", measures=c("Shannon")) +
+  geom_point(aes(fill=factor(Treatment)), size=1) +
+  facet_grid(.~TimePoint) +
+  geom_boxplot(aes(fill=factor(Treatment))) +
+  scale_fill_manual(values = c(
+    "." = "#919f70", #Yeabridge Green
+    "C.D" = "#a9d3e2", 
+    "C.W" = "#276982",
+    "H1.D" = "#fadb8e",
+    "H1.W" = "#eba944",
+    "H2.D" = "#F2A69D",
+    "H2.W" = "#a13536"
+  )) +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+p
+ggsave("Shannon_Root_byTimepointTreatment.jpg",width=8,height=7)
+```
+###Figure 3. Constrained analysis of principal coordinates (CAP) of beta diversity, as based on Bray-Curtis distances, with the model of CAP1 attributed to temperature treatment, and CAP2 attributed to watering treatment
+```{r}
+#3a
+##Time point 1 Soil Mixture
+ordf = ordinate(hdTP1Soil, distance="bray", weighted=FALSE, method="CAP", formula=~Temp_Trt+Water_Trt)
+p = plot_ordination(hdTP1Soil, ordf, color="Treatment")+
+  geom_point(size=6) +
+  geom_point(colour="black", size=6, pch=21)+
+  scale_colour_manual(values = c("C.D" = "#a9d3e2", 
+                               "C.W" = "#276982",
+                               "H1.D" = "#fadb8e",
+                               "H1.W" = "#eba944",
+                               "H2.D" = "#F2A69D",
+                               "H2.W" = "#a13536")
+                      )+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+p
+ggsave("CAPS_TP1_Soil_treatmentcolored.jpg",p,width=5,height=5)
+##Time point 1 Root
+ordf = ordinate(hdTP1Root, distance="bray", weighted=FALSE, method="CAP", formula=~Temp_Trt+Water_Trt)
+p = plot_ordination(hdTP1Root, ordf, color="Treatment")+
+  geom_point(size=6) +
+  geom_point(colour="black", size=6, pch=21)+
+  scale_colour_manual(values = c("C.D" = "#a9d3e2", 
+                                 "C.W" = "#276982",
+                                 "H1.D" = "#fadb8e",
+                                 "H1.W" = "#eba944",
+                                 "H2.D" = "#F2A69D",
+                                 "H2.W" = "#a13536")) +
+theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank())
+p
+ggsave("CAPS_TP1_Root_treatmentcolored.jpg",p,width=5,height=5)
+#3b
+##Time point 2 Soil Mixture
+ordf = ordinate(hdTP2Soil, distance="bray", weighted=FALSE, method="CAP", formula=~Temp_Trt+Water_Trt)
+p = plot_ordination(hdTP2Soil, ordf, color="Treatment")+
+  geom_point(size=6) +
+  geom_point(colour="black", size=6, pch=21)+
+  scale_colour_manual(values = c("C.D" = "#a9d3e2", 
+                               "C.W" = "#276982",
+                               "H1.D" = "#fadb8e",
+                               "H1.W" = "#eba944",
+                               "H2.D" = "#F2A69D",
+                               "H2.W" = "#a13536")
+                      )+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+p
+ggsave("CAPS_TP2_Soil_treatmentcolored.jpg",p,width=5,height=5)
+##Time point 2 Root
+ordf = ordinate(hdTP2Root, distance="bray", weighted=FALSE, method="CAP", formula=~Temp_Trt+Water_Trt)
+p = plot_ordination(hdTP2Root, ordf, color="Treatment")+
+  geom_point(size=6) +
+  geom_point(colour="black", size=6, pch=21)+
+  scale_colour_manual(values = c("C.D" = "#a9d3e2", 
+                                 "C.W" = "#276982",
+                                 "H1.D" = "#fadb8e",
+                                 "H1.W" = "#eba944",
+                                 "H2.D" = "#F2A69D",
+                                 "H2.W" = "#a13536")) +
+theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank())
+p
+ggsave("CAPS_TP2_Root_treatmentcolored.jpg",p,width=5,height=5)
+```
+###Figure 4. Bar graphs of the relative abundances of top 11 phylum across time point and sample type 
+```{r}
+glom <- tax_glom(hd_cur, taxrank = "Phylum")
+dat <- psmelt(glom)
+hd1s <- subset(dat, dat$TimePoint=="1")
+hd1s <- subset(hd1s, hd1s$SampleType=="Soil")
+hd1s$Phylum <- reorder(hd1s$Phylum, hd1s$Abundance)
+abunplot <- ggplot(data=hd1s, aes(x=Treatment, y=Abundance, fill=Phylum))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Other"="#4d5b6a" #Stiffkey Blue
+    ,"Cyanobacteria"="#6a90b4" #Cook's Blue
+    ,"Nitrospirae"="#599ec4" #ST Giles Blue
+    ,"TM7"="#7997a1" #Stone Blue
+    ,"Chloroflexi"="#427e83" #Vardo
+    ,"Planctomycetes"="#84b590" #"#84b59c" #Arsenic
+    ,"Firmicutes"="#919f70" #Yeabridge Green
+    ,"Gemmatimonadetes"="#686a47" #Bancha
+    ,"Acidobacteria"="#c8bd83" #Churlish Green
+    ,"Actinobacteria"="#a04344" #India Yellow
+    ,"Proteobacteria"="#ecc363" #Babouche
+    ,"Bacteroidetes"="#cb9e59" #Incarnadine
+    ,"Verrucomicrobia"="#8d8089" #Brassica
+  )) +
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+newgraph
+ggsave("RelaAbunAcrossTreatment_Phylum_TP1Soil.jpg",newgraph,width=10,height =12)
+
+hd1s <- subset(dat, dat$TimePoint=="2")
+hd1s <- subset(hd1s, hd1s$SampleType=="Soil")
+unique(hd1s$Phylum)
+hd1s$Phylum <- reorder(hd1s$Phylum, hd1s$Abundance)
+abunplot <- ggplot(data=hd1s, aes(x=Treatment, y=Abundance, fill=Phylum))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Other"="#4d5b6a" #Stiffkey Blue
+    ,"Cyanobacteria"="#6a90b4" #Cook's Blue
+    ,"Nitrospirae"="#599ec4" #ST Giles Blue
+    ,"TM7"="#7997a1" #Stone Blue
+    ,"Chloroflexi"="#427e83" #Vardo
+    ,"Planctomycetes"="#84b590"
+    ,"Firmicutes"="#919f70" #Yeabridge Green
+    ,"Gemmatimonadetes"="#686a47" #Bancha
+    ,"Acidobacteria"="#c8bd83" #Churlish Green
+    ,"Actinobacteria"="#a04344" #India Yellow
+    ,"Proteobacteria"="#ecc363" #Babouche
+    ,"Bacteroidetes"="#cb9e59" #Incarnadine
+    ,"Verrucomicrobia"="#8d8089" #Brassica
+  )) +
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+newgraph
+ggsave("RelaAbunAcrossTreatment_Phylum_TP2Soil.jpg",newgraph,width=10,height =12)
+
+hd1s <- subset(dat, dat$TimePoint=="1")
+hd1s <- subset(hd1s, hd1s$SampleType=="Root")
+unique(hd1s$Phylum)
+hd1s$Phylum <- reorder(hd1s$Phylum, hd1s$Abundance)
+abunplot <- ggplot(data=hd1s, aes(x=Treatment, y=Abundance, fill=Phylum))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Other"="#4d5b6a" #Stiffkey Blue
+    ,"Cyanobacteria"="#6a90b4" #Cook's Blue
+    ,"Nitrospirae"="#599ec4" #ST Giles Blue
+    ,"TM7"="#7997a1" #Stone Blue
+    ,"Chloroflexi"="#427e83" #Vardo
+    ,"Planctomycetes"="#84b590" #"#84b59c" #Arsenic
+    ,"Firmicutes"="#919f70" #Yeabridge Green
+    ,"Gemmatimonadetes"="#686a47" #Bancha
+    ,"Acidobacteria"="#c8bd83" #Churlish Green
+    ,"Actinobacteria"="#a04344" #India Yellow
+    ,"Proteobacteria"="#ecc363" #Babouche
+    ,"Bacteroidetes"="#cb9e59" #Incarnadine
+    ,"Verrucomicrobia"="#8d8089" #Brassica
+  )) +
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+newgraph
+ggsave("RelaAbunAcrossTreatment_Phylum_TP1Root.jpg",newgraph,width=10,height =12)
+
+hd1s <- subset(dat, dat$TimePoint=="2")
+hd1s <- subset(hd1s, hd1s$SampleType=="Root")
+hd1s$Phylum <- reorder(hd1s$Phylum, hd1s$Abundance)
+abunplot <- ggplot(data=hd1s, aes(x=Treatment, y=Abundance, fill=Phylum))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Other"="#4d5b6a" #Stiffkey Blue
+    ,"Cyanobacteria"="#6a90b4" #Cook's Blue
+    ,"Nitrospirae"="#599ec4" #ST Giles Blue
+    ,"TM7"="#7997a1" #Stone Blue
+    ,"Chloroflexi"="#427e83" #Vardo
+    ,"Planctomycetes"="#84b590" #"#84b59c" #Arsenic
+    ,"Firmicutes"="#919f70" #Yeabridge Green
+    ,"Gemmatimonadetes"="#686a47" #Bancha
+    ,"Acidobacteria"="#c8bd83" #Churlish Green
+    ,"Actinobacteria"="#a04344" #India Yellow
+    ,"Proteobacteria"="#ecc363" #Babouche
+    ,"Bacteroidetes"="#cb9e59" #Incarnadine
+    ,"Verrucomicrobia"="#8d8089" #Brassica
+  )) +
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+newgraph
+ggsave("RelaAbunAcrossTreatment_Phylum_TP2Root.jpg",newgraph,width=10,height =12)
+```
+###Figure 5.
+```{r}
+##Function for indicator species
+#5a,b. Generated with Interactive Tree of Life
+get_indicators <- function(physeq, groupfactor){
+  all.data <- psmelt(physeq)
+  all.data <- subset(all.data, Abundance > 0)
+  metadata <- sample_data(physeq)
+  spec <- subset(all.data, select = c("Sample", "OTU", "Abundance"))
+  spec <- reshape2::dcast(spec, Sample ~ OTU, value.var =  "Abundance")
+  spec <- dplyr::mutate_at(spec, c(2:ncol(spec)), ~replace(., is.na(.), 0))
+  rownames(spec) <- spec$Sample
+  spec <- subset(spec, select = -c(Sample))
+  spec <- spec[order(rownames(spec)),]
+  clust <- as.data.frame(metadata[[groupfactor]])
+  colnames(clust) <- "group"
+  clust$group.level <- as.integer(clust$group)
+  rownames(clust) <- metadata$Sample_ID
+  clust <- subset(clust, rownames(clust) %in% rownames(spec))
+  clust <- clust[order(rownames(clust)),]
+  if (!(identical(rownames(spec), rownames(clust)))) {
+    stop("Species and clustering dataframes are misaligned! Check sample orders.")
+  }
+  indvals <- indval(spec, clust$group.level, numitr = 1000)
+  summary(indvals)
+  #convert all.indvals to a single df for ease of access
+  pval <- as.data.frame(indvals$pval)
+  pval$OTU <- rownames(pval)
+  maxcls <- as.data.frame(indvals$maxcls)
+  maxcls$OTU <- rownames(maxcls)
+  indcls <- as.data.frame(indvals$indcls)
+  indcls$OTU <- rownames(indcls)
+  all.indvals <- merge(pval, maxcls, by = "OTU")
+  all.indvals <- merge(all.indvals, indcls, by = "OTU")
+  colnames(all.indvals) <- c("OTU", "pval", "group.level", "indcls")
+  all.indvals <- merge(all.indvals, clust, by = "group.level")
+  all.indvals <- subset(all.indvals, select = c(OTU, group, pval, indcls))
+  all.indvals <- unique(all.indvals)
+  #get only significant indicators (p<=0.05) with an indcls >=0.5
+  sig.indvals <- subset(all.indvals, pval <= 0.05)
+  sig.indvals <- subset(sig.indvals, indcls >= 0.5)
+  #return an object with both the subsetted significant indvals and all indvals
+  indvals <- list("all.indvals" = all.indvals, "sig.indvals" = sig.indvals, "all.data" = indvals)
+}
+#5c.
+##First bar graph
+w=get_indicators(hdRootsub,"Water_Trt")
+sample_data(hdRootsub)$Water_Trt #Drought, Watered
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hdRootsub)[w$sig.indvals$OTU, ], "matrix"))
+
+abunplot <- ggplot(data=phy_in, aes(x=Phylum, y=count, fill=Treatment))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + coord_flip() +
+#  facet_grid(.~Sample_Type+Timepoint, scales = "free", space = "free") + 
+  scale_fill_manual(values = c("Drought"="#DFDFDF",
+                               "Watered"="#4E4E4E")) +
+#  geom_text(aes(label = ..count.., y= ..prop..), stat= "count", hjust = 2)+
+  theme(axis.text.x=element_text(size=12,color="black",angle=90),
+        axis.text.y=element_text(size=12,color="black"),
+        axis.title=element_text(size=12,face="bold"),
+        text=element_text(size=12)) 
+newgraph
+ggsave("RelaAbunofWaterTrtIndicators_Phylum.jpg",newgraph,width=7,height =5)
+##Second bar graph
+hdRootsub_W <- subset_samples(hdRootsub,Water_Trt!="Drought")
+a=get_indicators(hdRootsub_W,"Temp_Trt")
+sample_data(hdRootsub_W)$Temp_Trt #22C, 38C
+asigtab = cbind(as(a$sig.indvals, "data.frame"), as(tax_table(hdRootsub)[a$sig.indvals$OTU, ], "matrix"))
+abunplot <- ggplot(data=phy_in, aes(x=Phylum, y=count, fill=group))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + coord_flip() +
+  scale_fill_manual(values = c("22C"="#276982",
+                               "38C"="#a13536"))+
+  theme(axis.text.x=element_text(size=12,color="black",angle=90),
+        axis.text.y=element_text(size=12,color="black"),
+        axis.title=element_text(size=12,face="bold"),
+        text=element_text(size=12)) 
+newgraph
+ggsave("RelaAbunWateredTEMPTrtIndicators_Phylum.jpg",newgraph,width=7,height=5)
+```
+
+
+##Supplemental Files
+
+###Supplemental Figure 1. Diagram of experimental set up and sampling.
+```{r}
+###Created with Biorender.com
+```
+
+###Supplemental Figure 2. Plant Phenotype Analysis
+```{r}
+###load data
+phenodata<-read.table("phenotypedata.txt",header=T,sep="\t",stringsAsFactors=FALSE)
+###S2a - Leaf Relative Water Content
+gplot(phenodata, aes(x=Treatment, y=LeafRWC,fill=Treatment)) +
+  scale_fill_manual(values = c("C.D" = "#a9d3e2", 
+                               "C.W" = "#276982",
+                               "H1.D" = "#fadb8e",
+                               "H1.W" = "#eba944",
+                               "H2.D" = "#F2A69D",
+                               "H2.W" = "#a13536")) +
+  geom_boxplot() +
+  facet_grid(.~Timepoint, scales = "free") +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("PercentLeafRWC.jpg",width= 6,height=6)
+###S2b - Plant Height
+ggplot(phenodata, aes(x=Treatment, y=Height,fill=Treatment)) +
+  scale_fill_manual(values = c("C.W" = "#276982",
+                               "C.D" = "#a9d3e2", 
+                               "H1.W" = "#eba944",
+                               "H1.D" = "#fadb8e",
+                               "H2.W" = "#a13536",
+                               "H2.D" = "#F2A69D"
+                               )) +
+  geom_boxplot() +
+  facet_grid(.~Timepoint, scales = "free") +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("Height.jpg",width=6,height=6)
+###S2c - Fresh Shoot Biomass
+ggplot(phenodata, aes(x=Treatment, y=FreshShoot,fill=Treatment)) +
+  scale_fill_manual(values = c("C.D" = "#a9d3e2", 
+                               "C.W" = "#276982",
+                               "H1.D" = "#fadb8e",
+                               "H1.W" = "#eba944",
+                               "H2.D" = "#F2A69D",
+                               "H2.W" = "#a13536")) +
+  geom_boxplot() +
+  facet_grid(.~Timepoint, scales = "free") +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("FreshShootBiomass.jpg",width= 6,height=6)
+###S2d - Dry Shoot Biomass
+ggplot(phenodata, aes(x=Treatment, y=DryShoot,fill=Treatment)) +
+  scale_fill_manual(values = c("C.D" = "#a9d3e2", 
+                               "C.W" = "#276982",
+                               "H1.D" = "#fadb8e",
+                               "H1.W" = "#eba944",
+                               "H2.D" = "#F2A69D",
+                               "H2.W" = "#a13536")) +
+  geom_boxplot() +
+  facet_grid(.~Timepoint, scales = "free") +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("DriedShootBiomass.jpg",width= 6,height=6)
+###Statistical Analyses
+fit <- aov(SoilMoisture ~ Timepoint*Temp_Trt*Water_Trt+SoilBatch, data=phenodata)
+fit <- aov(FreshShoot ~ Timepoint*Temp_Trt*Water_Trt+SoilBatch, data=phenodata)
+fit <- aov(DryShoot ~ Timepoint*Temp_Trt*Water_Trt+SoilBatch, data=phenodata)
+fit <- aov(ShootWaterPer ~ Timepoint*Temp_Trt*Water_Trt+SoilBatch, data=phenodata)
+fit <- aov(Height ~ Timepoint*Temp_Trt*Water_Trt+SoilBatch, data=phenodata)
+fit <- aov(LeafRWC ~ Timepoint*Temp_Trt*Water_Trt+SoilBatch, data=phenodata)
+summary(fit)
+TukeyHSD(fit,"Timepoint:Temp_Trt:Water_Trt")
+```
+
+###Supplemental Figure 3. Sample beta diversity analysis.
+```{r}
+ordf = ordinate(hd_current, "PCoA", "bray")
+p = plot_ordination(hd_current, ordf, color="SampleType",shape="TimePoint") +
+  geom_point(size=5) +
+  scale_colour_manual(values = c("Root" = "goldenrod1",
+                                 "Soil" = "mediumblue",
+                                 "FieldSoil"="yellowgreen",
+                                 "Mix"="skyblue")) +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("PCoA_all_sampletypecolored.jpg",p,width=5,height =5)
+```
+
+###Supplemental Figure 4. Counts of top 10 most abundant Actinobacterial genera in sorghum roots.
+```{r}
+###S4a. Counts of the top 10 Actionbacterial genera in soil mixtures
+####Subset to phylum Actinobacteria
+Actino <- subset_taxa(hdSoil, Phylum=="Actinobacteria")
+TopNOTUs = names(sort(taxa_sums(Actino), TRUE)[1:10])
+ent10 = prune_taxa(TopNOTUs, Actino)
+#Plot counts
+plot_bar(ent10, "Treatment", fill = "Genus", facet_grid = .~TimePoint)+
+  scale_fill_manual(values=c("Actinomadura"="#4c5b6c"
+                             ,"Pimelobacter"="#6a90b4" #Cook's Blue
+                             ,"Pseudonocardiaceae"="#599ec4" #ST Giles Blue
+                             ,"Nonomuraea"="#85b69c"
+                             ,"Geodermatophilus"="#7997a1" #Stone Blue
+                             ,"Amycolatopsis"= "#599ec4"
+                             ,"Rhodococcus"="#919f70" #Yeabridge Green
+                             ,"Kribbella"="#7997a1"
+                             ,"Marmoricola"="#c8bd83" #Churlish Green
+                             ,"Promicromonospora"="#919f71"
+                             ,"MicrococcaceaeFA"="#ecc363" #Babouche
+                             ,"GeodermatophilaceaeFA"="#c57b67" #Red Earth
+                             ,"Actinoplanes"="#6a91b4"
+                             ,"Streptomyces"="#676b47" 
+                             ,"MicrococcaceaeFA"="#437d83"
+                             ,"Cellulosimicrobium"="#a1c5c8"))
+ggsave(filename = "SoilActinoTop10_OTUs.jpg",width=5, height=6)
+###S4b. Counts of the top 10 Actionbacterial genera in the root
+####Subset to phylum Actinobacteria
+Actino <- subset_taxa(hdRoot, Phylum=="Actinobacteria")
+TopNOTUs = names(sort(taxa_sums(Actino), TRUE)[1:10])
+ent10 = prune_taxa(TopNOTUs, Actino)
+#Plot counts
+plot_bar(ent10, "Treatment", fill = "Genus", facet_grid = .~TimePoint)+
+  scale_fill_manual(values=c("Actinomadura"="#4c5b6c"
+                    ,"Pimelobacter"="#6a90b4" #Cook's Blue
+                    ,"Nonomuraea"="#85b69c"
+                    ,"Geodermatophilus"="#7997a1" #Stone Blue
+                    ,"Amycolatopsis"= "#599ec4"
+                    ,"Marmoricola"="#84b59c" #Arsenic
+                    ,"Rhodococcus"="#919f70" #Yeabridge Green
+                    ,"Kribbella"="#7997a1"
+                    ,"Promicromonospora"="#919f71"
+                    ,"MicrococcaceaeFA"="#ecc363" #Babouche
+                    ,"GeodermatophilaceaeFA"="#c57b67" #Red Earth
+                    ,"Actinoplanes"="#6a91b4"
+                    ,"Streptomyces"="#676b47" 
+                    ,"MicrococcaceaeFA"="#437d83"
+                    ,"Cellulosimicrobium"="#a1c5c8"
+                    ))
+ggsave(filename = "RootActinoTop10_OTUs.jpg",width=5, height=6)
+```
+
+###Supplemental Figure 5. Indicator species analysis results with time point 1 roots
+```{r}
+#5a. Bar graph showing the relative abundance by phylum of all indicator OTUs for time point 1 roots comparing watered versus drought 
+hdRootsub <- subset_samples(hdTP1Root,Temp_Trt!="30C")
+l=get_indicators(hdRootsub,"Water_Trt")
+sample_data(hdRootsub)$Water_Trt #drought, watered
+lsigtab = cbind(as(l$sig.indvals, "data.frame"), as(tax_table(hdRootsub)[l$sig.indvals$OTU, ], "matrix"))
+abunplot <- ggplot(data=phy_in, aes(x=Phylum, y=count, fill=group))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + coord_flip() +
+  scale_fill_manual(values = c("Drought"="#DFDFDF",
+                               "Watered"="#4E4E4E")) +
+  theme(axis.text.x=element_text(size=12,color="black",angle=90),
+        axis.text.y=element_text(size=12,color="black"),
+        axis.title=element_text(size=12,face="bold"),
+        text=element_text(size=12)) 
+newgraph
+ggsave("RelaAbunofTP1WaterTrtIndicators_Phylum.jpg",newgraph,width=7,height=5)
+#S5b. Bar graph showing the relative abundance by phylum of all indicator OTUs for time point 1 roots comparing 22°C ( blue) and 38°C (red) when subset to watered conditions only
+hdRootsub_W <- subset_samples(hdRootsub,Water_Trt=="Watered")
+a=get_indicators(hdRootsub_W,"Temp_Trt")
+sample_data(hdRootsub_W)$Temp_Trt #22C, 38C
+asigtab = cbind(as(a$sig.indvals, "data.frame"), as(tax_table(hdRootsub)[a$sig.indvals$OTU, ], "matrix"))
+
+abunplot <- ggplot(data=phy_in, aes(x=Phylum, y=count, fill=group))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + coord_flip() +
+  scale_fill_manual(values = c("22C"="#276982",
+                               "38C"="#a13536"))+
+  theme(axis.text.x=element_text(size=12,color="black",angle=90),
+        axis.text.y=element_text(size=12,color="black"),
+        axis.title=element_text(size=12,face="bold"),
+        text=element_text(size=12)) 
+newgraph
+ggsave("RelaAbunWateredTEMPTrtIndicators_Phylum.jpg",newgraph,width=7,height=5)
+#S5c. Bar graph showing the relative abundance by phylum of all indicator OTUs for time point 1 roots comparing samples from 22°C (blue) and 38°C (red) treatmeents when subset to drought conditions.
+hdRootsub_D <- subset_samples(hdRootsub,Water_Trt!="Watered")
+d=get_indicators(hdRootsub_D,"Temp_Trt")
+sample_data(hdRootsub_D)$Temp_Trt #22C, 38C
+dsigtab = cbind(as(d$sig.indvals, "data.frame"), as(tax_table(hdRootsub)[d$sig.indvals$OTU, ], "matrix"))
+abunplot <- ggplot(data=phy_in, aes(x=Phylum, y=count, fill=group))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + coord_flip() +
+  scale_fill_manual(values = c("22C"="#a9d3e2",
+                               "38C"="#F2A69D"))+
+  theme(axis.text.x=element_text(size=12,color="black",angle=90),
+        axis.text.y=element_text(size=12,color="black"),
+        axis.title=element_text(size=12,face="bold"),
+        text=element_text(size=12)) 
+newgraph
+ggsave("RelaAbunDroughtTEMPTrtIndicators_Phylum.jpg",newgraph,width=7,height=5)
+#S5d. Phylogenetic tree created with Interactive Tree of Life - Tree Of Life v1.0 (Ciccarelli FD, et al., Science.; 2006 Mar 3. 311(5765): 1283-7).
+```
+
+###Supplemental Figure 6. Indicator specie analysis results with time point 2 roots
+```{r}
+####S6a. Phylogenetic tree created with Interactive Tree of Life.
+####S6b. Bar graph showing the relative abundance of OTUs grouping by either indicator type on a phylum level
+hdRootsub_D <- subset_samples(hdRootsub,Water_Trt!="Watered")
+abunplot <- ggplot(data=phy_in, aes(x=Phylum, y=count, fill=group))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + coord_flip() +
+  scale_fill_manual(values = c("22C"="#a9d3e2",
+                               "38C"="#F2A69D"))+
+  theme(axis.text.x=element_text(size=12,color="black",angle=90),
+        axis.text.y=element_text(size=12,color="black"),
+        axis.title=element_text(size=12,face="bold"),
+        text=element_text(size=12)) 
+newgraph
+ggsave("RelaAbunDroughtTEMPTrtIndicatorsTP2_Phylum.jpg",newgraph,width=7,height=5)
+
+```
