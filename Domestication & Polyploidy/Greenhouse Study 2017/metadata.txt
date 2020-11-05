@@ -1,0 +1,177 @@
+Submission_ID	Tube_ID	Sample_ID	Type	Date_Collected	Sample_Type	gGenus	sSpecies	Group	Ploidy	PloidyGroup	RegionOrigin	CountryOrigin	Status	Comments	GenomeLineage
+A04_1_Root_07132017	A04.1.Root 7/13/17	A04_1_Root	A_Root	7/13/17	Root	Aegilops	Aegilops_searsii_Feldman_&_Kislev_ex_K_Hammer	aW	2n	Diploid	MiddleEast	Israel	Wild	.	SS
+A04_1_Soil_07132017	A04.1.soil 7/13	A04_1_Soil	A_Soil	7/13/17	Soil	Aegilops	Aegilops_searsii_Feldman_&_Kislev_ex_K_Hammer	aW	2n	Diploid	MiddleEast	Israel	Wild	.	SS
+A04_18_Rh_07132017	A04 18 7/13 Rh	A04_18_Rh	A_Rh	7/13/17	Rhizosphere	Aegilops	Aegilops_searsii_Feldman_&_Kislev_ex_K_Hammer	aW	2n	Diploid	MiddleEast	Israel	Wild	.	SS
+A04_18_Root_07132017	A04.18.Root 7/13/17	A04_18_Root	A_Root	7/13/17	Root	Aegilops	Aegilops_searsii_Feldman_&_Kislev_ex_K_Hammer	aW	2n	Diploid	MiddleEast	Israel	Wild	.	SS
+A04_18_Soil_07132017	A04 18 7/13 soil	A04_18_Soil	A_Soil	7/13/17	Soil	Aegilops	Aegilops_searsii_Feldman_&_Kislev_ex_K_Hammer	aW	2n	Diploid	MiddleEast	Israel	Wild	.	SS
+A04_49_Soil_07132017	A04 49 7/13 soil	A04_49_Soil	A_Soil	7/13/17	Soil	Aegilops	Aegilops_searsii_Feldman_&_Kislev_ex_K_Hammer	aW	2n	Diploid	MiddleEast	Israel	Wild	.	SS
+A04_6_Rh_07132017	A04 6 7/13 Rh	A04_6_Rh	A_Rh	7/13/17	Rhizosphere	Aegilops	Aegilops_searsii_Feldman_&_Kislev_ex_K_Hammer	aW	2n	Diploid	MiddleEast	Israel	Wild	.	SS
+A04_6_Root_07132017	A04.6.Root 7/13/17	A04_6_Root	A_Root	7/13/17	Root	Aegilops	Aegilops_searsii_Feldman_&_Kislev_ex_K_Hammer	aW	2n	Diploid	MiddleEast	Israel	Wild	.	SS
+A04_6_Soil_07132017	A04 6 7/13 S	A04_6_Soil	A_Soil	7/13/17	Soil	Aegilops	Aegilops_searsii_Feldman_&_Kislev_ex_K_Hammer	aW	2n	Diploid	MiddleEast	Israel	Wild	.	SS
+Autoclaved_Soil_06232017	soil auto 6/23	Autoclaved_Soil	Auto_Soil	6/23/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_07032017	soil auto 7/3	Autoclaved_Soil	Auto_Soil	7/3/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_1_07032017	soil auto 7/3 tp2 1	Autoclaved_Soil_1	Auto_Soil	7/3/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_1_07102017	soil auto 7/10 1	Autoclaved_Soil_1	Auto_Soil	7/10/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_2_07102017	soil auto 7/10 2	Autoclaved_Soil_2	Auto_Soil	7/10/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_23_07132017	soil auto 23 7/13	Autoclaved_Soil_23	Auto_Soil	7/13/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_3_07032017	soil auto tp2 3 7/3	Autoclaved_Soil_3	Auto_Soil	7/3/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_3_07102013	auto soil 3 7/10/17	Autoclaved_Soil_3	Auto_Soil	7/10/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_3_07102017	soil auto 3 7/10	Autoclaved_Soil_3	Auto_Soil	7/10/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_44_07132017	soil auto 44 7/13	Autoclaved_Soil_44	Auto_Soil	7/13/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_5_07032017	soil auto 5 7/3	Autoclaved_Soil_5	Auto_Soil	7/3/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_50_07132017	soil auto 50 7/13	Autoclaved_Soil_50	Auto_Soil	7/13/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_5or3_07102017	auto soil 7/10 5(? or 3?)	Autoclaved_Soil_5or3	Auto_Soil	7/10/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_66_07132017	soil auto.66 7/13	Autoclaved_Soil_66	Auto_Soil	7/13/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_69_07032017	soil auto 69 7/3	Autoclaved_Soil_69	Auto_Soil	7/3/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_A_06232017	soil auto 6/23	Autoclaved_Soil_A	Auto_Soil	6/23/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_B_06232017	soil auto 6/23	Autoclaved_Soil_B	Auto_Soil	6/23/17	Soil	.	.	.	.	.	.	.	.	.	.
+Autoclaved_Soil_C_06232017	soil auto 6/23	Autoclaved_Soil_C	Auto_Soil	6/23/17	Soil	.	.	.	.	.	.	.	.	.	.
+B01_14_Root_07132017	B01.14.Root 7/13/17	B01_14_Root	B_Root	7/13/17	Root	Hordeum	Hordeum_vulgare_L_subsp_vulgare	ln	2n	Diploid	Europe	France	Cultivated	.	Outgroup
+B01_14_Soil_07132017	B01 14 7/13 soil	B01_14_Soil	B_Soil	7/13/17	Soil	Hordeum	Hordeum_vulgare_L_subsp_vulgare	ln	2n	Diploid	Europe	France	Cultivated	.	Outgroup
+B01_19_Rh_07132017	B01 19 7/13 Rh	B01_19_Rh	B_Rh	7/13/17	Rhizosphere	Hordeum	Hordeum_vulgare_L_subsp_vulgare	ln	2n	Diploid	Europe	France	Cultivated	.	Outgroup
+B01_19_Root_07132017	B01.19.Root 7/13/17	B01_19_Root	B_Root	7/13/17	Root	Hordeum	Hordeum_vulgare_L_subsp_vulgare	ln	2n	Diploid	Europe	France	Cultivated	.	Outgroup
+B01_19_Soil_07132017	B01 19 7/13 soil	B01_19_Soil	B_Soil	7/13/17	Soil	Hordeum	Hordeum_vulgare_L_subsp_vulgare	ln	2n	Diploid	Europe	France	Cultivated	.	Outgroup
+B01_31_Soil_07132017	B01 31 7/13 soil	B01_31_Soil	B_Soil	7/13/17	Soil	Hordeum	Hordeum_vulgare_L_subsp_vulgare	ln	2n	Diploid	Europe	France	Cultivated	.	Outgroup
+B01_37_Rh_07132017	B01 37 7/13 Rh	B01_37_Rh	B_Rh	7/13/17	Rhizosphere	Hordeum	Hordeum_vulgare_L_subsp_vulgare	ln	2n	Diploid	Europe	France	Cultivated	.	Outgroup
+B01_37_Root_07132017	B01.37.Root 7/13/17	B01_37_Root	B_Root	7/13/17	Root	Hordeum	Hordeum_vulgare_L_subsp_vulgare	ln	2n	Diploid	Europe	France	Cultivated	.	Outgroup
+B01_37_Soil_07132017	B01.37.Soil 7/13/17	B01_37_Soil	B_Soil	7/13/17	Soil	Hordeum	Hordeum_vulgare_L_subsp_vulgare	ln	2n	Diploid	Europe	France	Cultivated	.	Outgroup
+B03_24_Rh_07132017	B03 24 7/13 Rh	B03_24_Rh	B_Rh	7/13/17	Rhizosphere	Hordeum	Hordeum_vulgare_L_subsp_spontaneum_KKoch_Thell	ln	2n	Diploid	MiddleEast	Israel	Wild	.	Outgroup
+B03_24_Root_07132017	B03.24.Root 7/13/17	B03_24_Root	B_Root	7/13/17	Root	Hordeum	Hordeum_vulgare_L_subsp_spontaneum_KKoch_Thell	ln	2n	Diploid	MiddleEast	Israel	Wild		Outgroup
+B03_24_Soil_07132017	B03 24 7/13 soil	B03_24_Soil	B_Soil	7/13/17	Soil	Hordeum	Hordeum_vulgare_L_subsp_spontaneum_KKoch_Thell	ln	2n	Diploid	MiddleEast	Israel	Wild	.	Outgroup
+B03_4_Rh_07132017	B03 4 7/13 Rh	B03_4_Rh	B_Rh	7/13/17	Rhizosphere	Hordeum	Hordeum_vulgare_L_subsp_spontaneum_KKoch_Thell	ln	2n	Diploid	MiddleEast	Israel	Wild	.	Outgroup
+B03_4_Root_07132017	B03.4.Root 7/13/17	B03_4_Root	B_Root	7/13/17	Root	Hordeum	Hordeum_vulgare_L_subsp_spontaneum_KKoch_Thell	ln	2n	Diploid	MiddleEast	Israel	Wild		Outgroup
+B03_4_Soil_07132017	B03.4.soil 7/13	B03_4_Soil	B_Soil	7/13/17	Soil	Hordeum	Hordeum_vulgare_L_subsp_spontaneum_KKoch_Thell	ln	2n	Diploid	MiddleEast	Israel	Wild	.	Outgroup
+B03_46_Rh_07132017	B03 46 7/13 Rh	B03_46_Rh	B_Rh	7/13/17	Rhizosphere	Hordeum	Hordeum_vulgare_L_subsp_spontaneum_KKoch_Thell	ln	2n	Diploid	MiddleEast	Israel	Wild	.	Outgroup
+B03_46_Root_07132017	B03.46.Root 7/13/17	B03_46_Root	B_Root	7/13/17	Root	Hordeum	Hordeum_vulgare_L_subsp_spontaneum_KKoch_Thell	ln	2n	Diploid	MiddleEast	Israel	Wild		Outgroup
+B03_46_Soil_07142017	B03 46 7/14 s?	B03_46_Soil	B_Soil	7/14/17	Soil	Hordeum	Hordeum_vulgare_L_subsp_spontaneum_KKoch_Thell	ln	2n	Diploid	MiddleEast	Israel	Wild	.	Outgroup
+B03_61_Soil_07132017	B03.61.soil 7/13	B03_61_Soil	B_Soil	7/13/17	Soil	Hordeum	Hordeum_vulgare_L_subsp_spontaneum_KKoch_Thell	ln	2n	Diploid	MiddleEast	Israel	Wild	.	Outgroup
+C01_12_Rh_07132017	C01 12 7/13 Rh	C01_12_Rh	C_Rh	7/13/17	Rhizosphere	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	UnitedStates	Cultivated	.	Outgroup
+C01_12_Root_07132017	C01.12.Root 7/13/17	C01_12_Root	C_Root	7/13/17	Root	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	UnitedStates	Cultivated	.	Outgroup
+C01_12_Soil_07132017	C01.12.soil 7/13	C01_12_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	UnitedStates	Cultivated	.	Outgroup
+C01_15_Rh_07132017	C01 15 7/13 Rh	C01_15_Rh	C_Rh	7/13/17	Rhizosphere	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	UnitedStates	Cultivated	.	Outgroup
+C01_15_Root_07132017	C01.15.Root 7/13/17	C01_15_Root	C_Root	7/13/17	Root	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	UnitedStates	Cultivated	.	Outgroup
+C01_15_Soil_07132017	C01.15.soil 7/13	C01_15_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	UnitedStates	Cultivated	.	Outgroup
+C01_41_Rh_07132017	C01.41.Rh* 7/13	C01_41_Rh	C_Rh	7/13/17	Rhizosphere	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	UnitedStates	Cultivated	.	Outgroup
+C01_41_Root_07132017	C01.41.Root 7/13/17	C01_41_Root	C_Root	7/13/17	Root	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	UnitedStates	Cultivated	.	Outgroup
+C01_41_Soil_07132017	C01.41.Soil 7/13/17	C01_41_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	UnitedStates	Cultivated	.	Outgroup
+C01_48_Soil_07132017	C01.48.soil 7/13	C01_48_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	UnitedStates	Cultivated	.	Outgroup
+C02_17_Rh_07132017	C02 17 7/13 Rh	C02_17_Rh	C_Rh	7/13/17	Rhizosphere	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	Mexico	Wild	.	Outgroup
+C02_17_Root_07132017	C02.17.Root 7/13/17	C02_17_Root	C_Root	7/13/17	Root	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	Mexico	Wild	.	Outgroup
+C02_17_Soil_07132017	C02.17.soil 7/13	C02_17_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	Mexico	Wild	.	Outgroup
+C02_22_Root_07132017	C02.22.Root 7/13/17	C02_22_Root	C_Root	7/13/17	Root	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	Mexico	Wild	.	Outgroup
+C02_22_Soil_07132017	C02.22.soil 7/13	C02_22_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	Mexico	Wild	.	Outgroup
+C02_26_Soil_07132017	C02 26 7/13 soil	C02_26_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	Mexico	Wild	.	Outgroup
+C02_28_Rh_07132017	C02 28 7/13 Rh	C02_28_Rh	C_Rh	7/13/17	Rhizosphere	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	Mexico	Wild	.	Outgroup
+C02_28_Root_07132017	C02.28.Root 7/13/17	C02_28_Root	C_Root	7/13/17	Root	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	Mexico	Wild	.	Outgroup
+C02_43_C_Soil_07132017	C02.43.C.soil 7/13	C02_43_C_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	Mexico	Wild	.	Outgroup
+C02_43_Soil_07132017	C02 43 7/13 soil	C02_43_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	Mexico	Wild	.	Outgroup
+C02_59_Soil_07132017	C02.59.soil 7/13	C02_59_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_hirsutum_L	Out	4n	Polyploid	NorthAmerica	Mexico	Wild	.	Outgroup
+C03_40_Soil_07132017	C03 40 7/13 S	C03_40_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_arboreum_L	Out	2n	Diploid	Asia	India	Wild	.	Outgroup
+C03_42_Rh_07132017	C03 42 7/13 Rh	C03_42_Rh	C_Rh	7/13/17	Rhizosphere	Gossypium	Gossypium_arboreum_L	Out	2n	Diploid	Asia	India	Wild	.	Outgroup
+C03_42_Root_07132017	C03.42.Root 7/13/17	C03_42_Root	C_Root	7/13/17	Root	Gossypium	Gossypium_arboreum_L	Out	2n	Diploid	Asia	India	Wild	.	Outgroup
+C03_42_Soil_07132017	C03.42.soil 7/13	C03_42_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_arboreum_L	Out	2n	Diploid	Asia	India	Wild	.	Outgroup
+C03_45_Soil_07132017	C03 45 7/13 soil	C03_45_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_arboreum_L	Out	2n	Diploid	Asia	India	Wild	.	Outgroup
+C03_52_Soil_07132017	C03.52.soil 7/13	C03_52_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_arboreum_L	Out	2n	Diploid	Asia	India	Wild	.	Outgroup
+C03_7_Rh_07132017	C03.7.Rh 7/13 *	C03_7_Rh	C_Rh	7/13/17	Rhizosphere	Gossypium	Gossypium_arboreum_L	Out	2n	Diploid	Asia	India	Wild	.	Outgroup
+C03_7_Root_07132017	C03.7.Root 7/13/17	C03_7_Root	C_Root	7/13/17	Root	Gossypium	Gossypium_arboreum_L	Out	2n	Diploid	Asia	India	Wild	.	Outgroup
+C03_7_Soil_07132017	C03.7.soil 7/13	C03_7_Soil	C_Soil	7/13/17	Soil	Gossypium	Gossypium_arboreum_L	Out	2n	Diploid	Asia	India	Wild	.	Outgroup
+Centrifuged_Inoculum_Soil_Leftover_06212017	ino sludge (wet sludge). 6/21	Centrifuged_Inoculum_Soil_Leftover	Cent_Soil	6/21/17	Soil	.	.	.	.	.	.	.	.	.	.
+Centrifuged_Inoculum_Soil_Leftover_A_06212017	wet soil inoculum 6/21 A	Centrifuged_Inoculum_Soil_Leftover_A	Cent_Soil	6/21/17	Soil	.	.	.	.	.	.	.	.	.	.
+Centrifuged_Inoculum_Soil_Leftover_B_06212017	wet soil innoculum B 6/21	Centrifuged_Inoculum_Soil_Leftover_B	Cent_Soil	6/21/17	Soil	.	.	.	.	.	.	.	.	.	.
+Centrifuged_Inoculum_Soil_Leftover_C_06212017	ino sludge (wet sludge). 6/21	Centrifuged_Inoculum_Soil_Leftover_C	Cent_Soil	6/21/17	Soil	.	.	.	.	.	.	.	.	.	.
+Centrifuged_Inoculum_Soil_Leftover_D_06212017	wet soil innoculum 6/21	Centrifuged_Inoculum_Soil_Leftover_D	Cent_Soil	6/21/17	Soil	.	.	.	.	.	.	.	.	.	.
+ENT7_2_Root_07132017	ENT7.2.Root 7/13/17	ENT7_2_Root	E_Root	7/13/17	Root	Triticum	GANAESQUARROSA_180	W	6n	Polyploid	CIMMYT	NorthAmerica	Synthetic	.	AABBDD
+ENT7_2_Soil _07132017	ENT7 2 Soil 7/13/17	ENT7_2_Soil	E_Soil	7/13/17	Soil	Triticum	GANAESQUARROSA_180	W	6n	Polyploid	CIMMYT	NorthAmerica	Synthetic	.	AABBDD
+ENT7_31_Rh_07132017	ENT7.31.Rh 7/13	ENT7_31_Rh	E_Rh	7/13/17	Rhizosphere	Triticum	GANAESQUARROSA_181	W	6n	Polyploid	CIMMYT	NorthAmerica	Synthetic	.	AABBDD
+ENT7_31_Root_07132017	ENT7.31.Root 7/13/17	ENT7_31_Root	E_Root	7/13/17	Root	Triticum	GANAESQUARROSA_180	W	6n	Polyploid	CIMMYT	NorthAmerica	Synthetic	.	AABBDD
+ENT7_31_Soil_07132017	ENT7 31 7/13 soil	ENT7_31_Soil	E_Soil	7/13/17	Soil	Triticum	GANAESQUARROSA_182	W	6n	Polyploid	CIMMYT	NorthAmerica	Synthetic	.	AABBDD
+ENT7_60_Soil_07132017	ENT7 60 7/13 soil	ENT7_60_Soil	E_Soil	7/13/17	Soil	Triticum	GANAESQUARROSA_183	W	6n	Polyploid	CIMMYT	NorthAmerica	Synthetic	.	AABBDD
+ENT7_9_Rh_07132017	ENT7 9 7/13 Rh	ENT7_9_Rh	E_Rh	7/13/17	Rhizosphere	Triticum	GANAESQUARROSA_184	W	6n	Polyploid	CIMMYT	NorthAmerica	Synthetic	.	AABBDD
+ENT7_9_Root_07132017	ENT7.9.Root 7/13/17	ENT7_9_Root	E_Root	7/13/17	Root	Triticum	GANAESQUARROSA_180	W	6n	Polyploid	CIMMYT	NorthAmerica	Synthetic	.	AABBDD
+ENT7_9_Soil_07132017	ENT7 9 7/13 soil	ENT7_9_Soil	E_Soil	7/13/17	Soil	Triticum	GANAESQUARROSA_185	W	6n	Polyploid	CIMMYT	NorthAmerica	Synthetic	.	AABBDD
+Inoculated_Soil_06222017	dil inoc 6/22	Inoculum	Inoculum	6/22/17	Soil	.	.	.	.	.	.	.	.	(already measured by Siwen)	.
+Inoculated_Soil_06232017	soil + dil 6/23	Inoculated_Soil	Ino_Soil	6/23/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_06282017	dil ino 6/28 (siwen measured)	Inoculum	Inoculum	6/22/17	Soil	.	.	.	.	.	.	.	.	(already measured by Siwen)	.
+Inoculated_Soil_07032017	soil dil 7/3	Inoculated_Soil	Ino_Soil	7/3/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_1_07032017	soil dil TP2 1 7/3	Inoculated_Soil_1	Ino_Soil	7/3/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_1_07102017	soil dil 1 7/10	Inoculated_Soil_1	Ino_Soil	7/10/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_2_07032017	soil dil 7/3 tp2 2	Inoculated_Soil_2	Ino_Soil	7/3/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_2_07102017	soil dil 7/10 2	Inoculated_Soil_2	Ino_Soil	7/10/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_3_07032017	soil dil 7/3 3 TP2	Inoculated_Soil_3	Ino_Soil	7/3/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_3_07102017	soil dil 3 7/10	Inoculated_Soil_3	Ino_Soil	7/10/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_34_07132017	soil dil 34 7/13	Inoculated_Soil_34	Ino_Soil	7/13/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_35_07132017	soil dil 35 7/13	Inoculated_Soil_35	Ino_Soil	7/13/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_4_07032017	soil dil TP2 4 7/3	Inoculated_Soil_4	Ino_Soil	7/3/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_4_07102017	soil dil 7/10 4	Inoculated_Soil_4	Ino_Soil	7/10/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_5_07032017	soil dil tp2 5 7/3 soil	Inoculated_Soil_5	Ino_Soil	7/3/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_5_07132017	soil dil 5 soil 7/13	Inoculated_Soil_5	Ino_Soil	7/13/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_56_07132017	soil dil 56 7/13 soil	Inoculated_Soil_56	Ino_Soil	7/13/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_75_07132017	soil dil 75 7 /13	Inoculated_Soil_75	Ino_Soil	7/13/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_75_A_07132017	soil dil 75 A 7/13	Inoculated_Soil_75_A	Ino_Soil	7/13/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_75_B_07132017	soil dil 75 B 7/13	Inoculated_Soil_75_B	Ino_Soil	7/13/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_75_C_07132017	soil dil 75 C 7/13	Inoculated_Soil_75_C	Ino_Soil	7/13/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_A_06232017	soil dil A 6/23	Inoculated_Soil_A	Ino_Soil	6/23/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_B_06232017	soil dil 6/23 B soil	Inoculated_Soil_B	Ino_Soil	6/23/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_C_06232017	soil dil 6/23 C	Inoculated_Soil_C	Ino_Soil	6/23/17	Soil	.	.	.	.	.	.	.	.	.	.
+Inoculated_Soil_D_06232017	soil dil 6/23 D	Inoculated_Soil_D	Ino_Soil	6/23/17	Soil	.	.	.	.	.	.	.	.	"put in X,y,z for samples with same id atm please!"	.
+Soil_Used_For_Inoculum_2_06212017	s.f.i. 2 6/21	Soil_Used_For_Inoculum_2	OG_Soil	6/21/17	Soil	.	.	.	.	.	.	.	.	.	.
+Soil_Used_For_Inoculum_A_06212017	s.f.i. 6/21	Soil_Used_For_Inoculum_A	OG_Soil	6/21/17	Soil	.	.	.	.	.	.	.	.	.	.
+Soil_Used_For_Inoculum_B_06212017	s.f.i. 6/21	Soil_Used_For_Inoculum_B	OG_Soil	6/21/17	Soil	.	.	.	.	.	.	.	.	.	.
+Soil_Used_For_Inoculum_D_06212017	s.f.i 6/21 D	Soil_Used_For_Inoculum_D	OG_Soil	6/21/17	Soil	.	.	.	.	.	.	.	.	could be wrong/from not used innoculum	.
+Soil_Used_For_Inoculum_E_06222017	s.f.i 6/22 E	Soil_Used_For_Inoculum_E	OG_Soil	6/21/17	Soil	.	.	.	.	.	.	.	.	(already measured by Siwen)	.
+W02_25_Rh_07132017	W02 25 7/13 Rh	W02_25_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_monococcum_L_subsp_monococcum	W	2n	Diploid	Germany	Europe	Cultivated	.	AA
+W02_25_Root_07132017	W02.25.Root 7/13/17	W02_25_Root	W_Root	7/13/17	Root	Triticum	Triticum_monococcum_L_subsp_monococcum	W	2n	Diploid	Germany	Europe	Cultivated	.	AA
+W02_25_Soil_07132017	W02.25.soil	W02_25_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_monococcum_L_subsp_monococcum	W	2n	Diploid	Germany	Europe	Cultivated	1	AA
+W02_30_Root_07132017	W02.30.Root 7/13/17	W02_30_Root	W_Root	7/13/17	Root	Triticum	Triticum_monococcum_L_subsp_monococcum	W	2n	Diploid	Germany	Europe	Cultivated	.	AA
+W02_30_Soil_07132017	W02.30.soil 7/13	W02_30_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_monococcum_L_subsp_monococcum	W	2n	Diploid	Germany	Europe	Cultivated	.	AA
+W02_39_Rh_07132017	W02 39 Rh* 7/13	W02_39_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_monococcum_L_subsp_monococcum	W	2n	Diploid	Germany	Europe	Cultivated	.	AA
+W02_39_Root_07132017	W02.39.Root 7/13/17	W02_39_Root	W_Root	7/13/17	Root	Triticum	Triticum_monococcum_L_subsp_monococcum	W	2n	Diploid	Germany	Europe	Cultivated	.	AA
+W02_39_Soil_07132017	W02.39.soil 7/13	W02_39_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_monococcum_L_subsp_monococcum	W	2n	Diploid	Germany	Europe	Cultivated	.	AA
+W02_47_Soil_07132017	W02 47 7/13 soil	W02_47_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_monococcum_L_subsp_monococcum	W	2n	Diploid	Germany	Europe	Cultivated	.	AA
+W02_57_Soil_07132017	W02.57.soil 7/13	W02_57_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_monococcum_L_subsp_monococcum	W	2n	Diploid	Germany	Europe	Cultivated	.	AA
+W11_13_Rh_07132017	W11 13 Rh 7/13	W11_13_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_turgidum_L_subsp_paleocolchicum_A_Love_&_D_Love	W	4n	Polyploid	England	Europe	Wild	.	AABB
+W11_13_Root_07132017	W11.13.Root 7/13/17	W11_13_Root	W_Root	7/13/17	Root	Triticum	Triticum_turgidum_L_subsp_paleocolchicum_A_Love_&_D_Love	W	4n	Polyploid	England	Europe	Wild	.	AABB
+W11_13_Soil_07132017	W11 13 7/13 s	W11_13_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_turgidum_L_subsp_paleocolchicum_A_Love_&_D_Love	W	4n	Polyploid	England	Europe	Wild	.	AABB
+W11_29_Rh_07132017	W11.29.Rh 7/13	W11_29_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_turgidum_L_subsp_paleocolchicum_A_Love_&_D_Love	W	4n	Polyploid	England	Europe	Wild	.	AABB
+W11_29_Root_07132017	W11.29.Root 7/13/17	W11_29_Root	W_Root	7/13/17	Root	Triticum	Triticum_turgidum_L_subsp_paleocolchicum_A_Love_&_D_Love	W	4n	Polyploid	England	Europe	Wild	.	AABB
+W11_29_Soil_07132017	W11.29.soil 7/13	W11_29_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_turgidum_L_subsp_paleocolchicum_A_Love_&_D_Love	W	4n	Polyploid	England	Europe	Wild	doublechecked	AABB
+W11_36_Root_07132017	W11.36.Root 7/13/17	W11_36_Root	W_Root	7/13/17	Root	Triticum	Triticum_turgidum_L_subsp_paleocolchicum_A_Love_&_D_Love	W	4n	Polyploid	England	Europe	Wild	.	AABB
+W11_36_Soil_07132017	W11.36.soil 7/13	W11_36_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_turgidum_L_subsp_paleocolchicum_A_Love_&_D_Love	W	4n	Polyploid	England	Europe	Wild	.	AABB
+W17_10_Rh_07132017	W17 10 7/13 Rh	W17_10_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_aestivum_L_subsp_macha_Dekapr_&_Menabde_Mackey	W	6n	Polyploid	Switzerland	Europe	Wild	.	AABBDD
+W17_10_Root_07132017	W17.10.Root 7/13/17	W17_10_Root	W_Root	7/13/17	Root	Triticum	Triticum_aestivum_L_subsp_macha_Dekapr_&_Menabde_Mackey	W	6n	Polyploid	Switzerland	Europe	Wild	.	AABBDD
+W17_10_Soil_07132017	W17.10.soil 7/13	W17_10_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_aestivum_L_subsp_macha_Dekapr_&_Menabde_Mackey	W	6n	Polyploid	Switzerland	Europe	Wild	.	AABBDD
+W17_20_Rh_07132017	W17 20 7/13 Rh	W17_20_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_aestivum_L_subsp_macha_Dekapr_&_Menabde_Mackey	W	6n	Polyploid	Switzerland	Europe	Wild	.	AABBDD
+W17_20_Soil_07132017	W12 20 7/13 soil	W17_20_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_aestivum_L_subsp_macha_Dekapr_&_Menabde_Mackey	W	6n	Polyploid	Switzerland	Europe	Wild	Likely W17?!	AABBDD
+W17_27_Rh_07132017	W17 27 7/13 Rh	W17_27_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_aestivum_L_subsp_macha_Dekapr_&_Menabde_Mackey	W	6n	Polyploid	Switzerland	Europe	Wild	.	AABBDD
+W17_27_Root_07132017	W17.27.Root 7/13/17	W17_27_Root	W_Root	7/13/17	Root	Triticum	Triticum_aestivum_L_subsp_macha_Dekapr_&_Menabde_Mackey	W	6n	Polyploid	Switzerland	Europe	Wild	.	AABBDD
+W17_27_Soil_07132017	W17.27.Soil 7/13/17	W17_27_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_aestivum_L_subsp_macha_Dekapr_&_Menabde_Mackey	W	6n	Polyploid	Switzerland	Europe	Wild	.	AABBDD
+W17_53_Soil_07132017	W17.53.soil 7/13	W17_53_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_aestivum_L_subsp_macha_Dekapr_&_Menabde_Mackey	W	6n	Polyploid	Switzerland	Europe	Wild	.	AABBDD
+W17_58_Soil_07132017	W17.58.soil 7/13	W17_58_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_aestivum_L_subsp_macha_Dekapr_&_Menabde_Mackey	W	6n	Polyploid	Switzerland	Europe	Wild	.	AABBDD
+W23_11_Root_07132017	W23.11.Root 7/13/17	W23_11_Root	W_Root	7/13/17	Root	Triticum	Triticum_monococcum_L_subsp_aegilopoides_Link_Thell	W	2n	Diploid	England	Europe	Wild	.	AA
+W23_11_Soil_07132017	W23 11 7/13 soil	W23_11_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_monococcum_L_subsp_aegilopoides_Link_Thell	W	2n	Diploid	England	Europe	Wild	.	AA
+W23_54_Rh_07132017	W23 54 7/13 Rh	W23_54_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_monococcum_L_subsp_aegilopoides_Link_Thell	W	2n	Diploid	England	Europe	Wild	.	AA
+W23_54_Root_07132017	W23.54.Root 7/13/17	W23_54_Root	W_Root	7/13/17	Root	Triticum	Triticum_monococcum_L_subsp_aegilopoides_Link_Thell	W	2n	Diploid	England	Europe	Wild	.	AA
+W23_54_Soil_07132017	W23.54.soil 7/13	W23_54_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_monococcum_L_subsp_aegilopoides_Link_Thell	W	2n	Diploid	England	Europe	Wild	.	AA
+W23_62_Soil_07132017	W23.62.soil 7/13	W23_62_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_monococcum_L_subsp_aegilopoides_Link_Thell	W	2n	Diploid	England	Europe	Wild	.	AA
+W23_63_Soil_07132017	W23.63.soil 7/13	W23_63_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_monococcum_L_subsp_aegilopoides_Link_Thell	W	2n	Diploid	England	Europe	Wild	.	AA
+W36_3_Soil_07132017	W36.3.Soil 7/13	W36_3_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_aestivum_L_subsp_aestivum	W	6n	Polyploid	Brazil	SouthAmerica	Cultivated	.	AABBDD
+W36_33_Rh_07132017	W36.33.Rh* 7/13	W36_33_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_aestivum_L_subsp_aestivum	W	6n	Polyploid	Brazil	SouthAmerica	Cultivated	*	AABBDD
+W36_33_Root_07132017	W36.33.Root 7/13/17	W36_33_Root	W_Root	7/13/17	Root	Triticum	Triticum_aestivum_L_subsp_aestivum	W	6n	Polyploid	Brazil	SouthAmerica	Cultivated	.	AABBDD
+W36_33_Soil_07132017	W36.33.soil 7/13	W36_33_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_aestivum_L_subsp_aestivum	W	6n	Polyploid	Brazil	SouthAmerica	Cultivated	.	AABBDD
+W36_38_Root_07132017	W36.38.Root 7/13/17	W36_38_Root	W_Root	7/13/17	Root	Triticum	Triticum_aestivum_L_subsp_aestivum	W	6n	Polyploid	Brazil	SouthAmerica	Cultivated	.	AABBDD
+W36_38_Soil_07132017	W36 38 7/13 soil	W36_38_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_aestivum_L_subsp_aestivum	W	6n	Polyploid	Brazil	SouthAmerica	Cultivated	.	AABBDD
+W36_55_Soil_07132017	W36.55.Soil 7/13	W36_55_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_aestivum_L_subsp_aestivum	W	6n	Polyploid	Brazil	SouthAmerica	Cultivated	.	AABBDD
+W36_73_Soil_07132017	W36.73.Soil 7/13/17	W36_73_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_aestivum_L_subsp_aestivum	W	6n	Polyploid	Brazil	SouthAmerica	Cultivated	.	AABBDD
+W36_8_Rh_07132017	W36 8 7/13 Rh	W36_8_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_aestivum_L_subsp_aestivum	W	6n	Polyploid	Brazil	SouthAmerica	Cultivated	.	AABBDD
+W36_8_Root_07132017	W36.8.Root 7/13/17	W36_8_Root	W_Root	7/13/17	Root	Triticum	Triticum_aestivum_L_subsp_aestivum	W	6n	Polyploid	Brazil	SouthAmerica	Cultivated	.	AABBDD
+W40_16_Rh*_07132017	W40* 16 7/13 Rh	W40_16_Rh*	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_turgidum_L_subsp_durum_Desf_Husn	W	4n	Polyploid	South Africa	Africa	Cultivated	.	AABB
+W40_16_Root_07132017	W40.16.Root 7/13/17	W40_16_Root	W_Root	7/13/17	Root	Triticum	Triticum_turgidum_L_subsp_durum_Desf_Husn	W	4n	Polyploid	South Africa	Africa	Cultivated	.	AABB
+W40_16_Soil_07132017	W40.16.Soil 7/13/18	W40_16_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_turgidum_L_subsp_durum_Desf_Husn	W	4n	Polyploid	South Africa	Africa	Cultivated	.	AABB
+W40_21_Rh_07132017	W40.21.Rh * 7/13	W40_21_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_turgidum_L_subsp_durum_Desf_Husn	W	4n	Polyploid	South Africa	Africa	Cultivated	*	AABB
+W40_21_Soil_07132017	W40.21.soil 7/13	W40_21_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_turgidum_L_subsp_durum_Desf_Husn	W	4n	Polyploid	South Africa	Africa	Cultivated	.	AABB
+W40_26_Rh_07132017	W40 26 7/13 Rh	W40_26_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_turgidum_L_subsp_durum_Desf_Husn	W	4n	Polyploid	South Africa	Africa	Cultivated	.	AABB
+W40_26_Root_07132017	W40.26.Root 7/13/17	W40_26_Root	W_Root	7/13/17	Root	Triticum	Triticum_turgidum_L_subsp_durum_Desf_Husn	W	4n	Polyploid	South Africa	Africa	Cultivated	.	AABB
+W40_3_Rh_07132017	W40.3.Rh 7/13	W40_3_Rh	W_Rh	7/13/17	Rhizosphere	Triticum	Triticum_turgidum_L_subsp_durum_Desf_Husn	W	4n	Polyploid	South Africa	Africa	Cultivated	.	AABB
+W40_3_Root_07132017	W40.3.Root 7/13/17	W40_3_Root	W_Root	7/13/17	Root	Triticum	Triticum_turgidum_L_subsp_durum_Desf_Husn	W	4n	Polyploid	South Africa	Africa	Cultivated	.	AABB
+W40_3_Soil_07132017	W40.3.soil 7/13	W40_3_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_turgidum_L_subsp_durum_Desf_Husn	W	4n	Polyploid	South Africa	Africa	Cultivated	.	AABB
+W40_36_Soil_07132017	W40.36.Soil 7/13/17	W40_36_Soil	W_Soil	7/13/17	Soil	Triticum	Triticum_turgidum_L_subsp_durum_Desf_Husn	W	4n	Polyploid	South Africa	Africa	Cultivated	.	AABB
