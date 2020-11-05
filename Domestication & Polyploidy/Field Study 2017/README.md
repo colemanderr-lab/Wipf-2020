@@ -1,1 +1,1 @@
-Approach 3. A field study conducted in the summer of 2017 in which 27 genotypes were sampled at 14 weeks old (2 wild lines of A. searsii and T. tauschii (2n), wild and cultivated Gossypium hirsutum (4n) and wild G. arboreum and G. raimondii (2n), two cultivated and one wild line of: Hordeum vulgare (2n), T. monocuccum and T. urartu (2n), 2 cultivated and 2 wild lines of both T. turgidum (4n) and T. aestivum).
+Approach 3. A field study conducted in the summer of 2017 in which 27 genotypes were sampled at 14 weeks old.
