@@ -1,0 +1,1 @@
+Approach 2. A greenhouse study in which 13 genotypes were sampled at 5 weeks old (wild Aegilops searsii (2n), wild and cultivated Gossypium hirsutum (4n) and wild G. arboreum (2n), and a cultivated and wild line of: T. monococcum and Hordeum vulgare (2n), T. turgidum (4n), and T. aestivum (6n))
