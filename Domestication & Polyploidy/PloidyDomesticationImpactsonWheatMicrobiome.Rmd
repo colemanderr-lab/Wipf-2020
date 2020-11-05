@@ -1,0 +1,941 @@
+---
+title: "Domestication and Ploidy Influence Assembly of the Wheat Bacterial Microbiome"
+author: "Edi Wipf"
+date: "10/14/2020"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Scripts for Main and Supplemental Figures
+
+##Intialize working environment
+```{r}
+library("phyloseq"); packageVersion("phyloseq")
+library("ggplot2"); packageVersion("ggplot2")
+theme_set(theme_bw()) ###Define a default theme for ggplot graphics.
+library("scales")
+library("grid")
+library("DESeq2")
+library("ape")
+library("vegan")
+library("biom")
+library("plyr")
+library("seqinr")
+library("labdsv")
+library("devtools")
+library("picante")
+
+#set working directory
+setwd()
+```
+##Load phyloseq objects
+```{r}
+##Field Study 2015 data, Approach 1
+biom_file = "/Users/hwipf/Desktop/PD_Project/FS2015/new_otu_table.biom"
+map_file = "/Users/hwipf/Desktop/PD_Project/FS2015/cerealmetadata.txt"
+otutax = import_biom(biom_file,parseFunction = parse_taxonomy_greengenes)
+sam = import_qiime_sample_data(map_file)
+prelim_p = merge_phyloseq(otutax, sam)
+filter = filter_taxa((prelim_p), function(x) sum(x > 2) > 2, TRUE)
+set.seed(55) ; prelimP_rare=rarefy_even_depth(filter, sample.size = min(10000),
+                                              rngseed = FALSE, replace = TRUE, trimOTUs = TRUE, verbose = TRUE)
+##Greenhouse Study 2017 data, Approach 2
+biom_file = "/Users/hwipf/Desktop/PD_Project/GH2017/otu.biom"
+map_file = "/Users/hwipf/Desktop/PD_Project/GH2017/metadata.txt"
+otutax = import_biom(biom_file,parseFunction = parse_taxonomy_greengenes)
+sam = import_qiime_sample_data(map_file)
+rcom = merge_phyloseq(otutax, sam)
+filter = prune_samples(sample_sums(rcom)>=500, rcom)
+rcom_f= filter_taxa((filter), function(x) sum(x > 2) > 2, TRUE)
+set.seed(25) ; rcom_rare=rarefy_even_depth(rcom_f, sample.size = min(10000),
+                                          rngseed = FALSE, replace = TRUE, trimOTUs = TRUE, verbose = TRUE)
+##Field Study 2017 data, Approach 3
+biom_file = "/Users/hwipf/Desktop/PD_Project/FS2017/new_otu_table.biom"
+map_file = "/Users/hwipf/Desktop/PD_Project/FS2017/ploid_metadata.txt"
+otutax = import_biom(biom_file,parseFunction = parse_taxonomy_greengenes)
+sam = import_qiime_sample_data(map_file)
+tree_Q = read.tree("/Users/hwipf/Desktop/PD_Project/FS2017/otu.phy")
+tree_Q = root(tree_Q, 1, resolve.root = T)
+till_poly = merge_phyloseq(otutax, sam, tree_Q)
+filter = filter_taxa((till_poly), function(x) sum(x > 2) > 2, TRUE)
+set.seed(92) ; poly_rare=rarefy_even_depth(filter, sample.size = min(10000),
+                                           rngseed = FALSE, replace = TRUE, trimOTUs = TRUE, verbose = TRUE)
+```
+##Subset data
+```{r}
+##Field Study 2015 data, Approach 1
+Wheat <- subset_samples(prelimP_rare, Species%in%c("Tm", "Tt", "TaB", "TaG"))
+sample_data(Wheat)$SampleType <- factor(sample_data(Wheat)$SampleType,levels=c("Soil", "Rhizosphere", "Root"))
+sample_data(Wheat)$GenomeLineage<-factor(sample_data(Wheat)$GenomeLineage, levels=c("AA","AABB","AABBDD"))
+control<-subset_samples(Wheat,Treatment!="Drought")
+controlns <-subset_samples(control,SampleType!="Soil")
+RhizoP <- subset_samples(control, SampleType=="Rhizosphere")
+RootP <- subset_samples(control, SampleType=="Root")
+SoilP <- subset_samples(control, SampleType=="Soil")
+
+##Greenhouse Study 2017 data, Approach 2
+sample_data(rcom_rare)$Sample_Type <- factor(sample_data(rcom_rare)$Sample_Type,levels=c("Soil", "Rhizosphere", "Root"))
+sample_data(rcom_rare)$GenomeLineage<-factor(sample_data(rcom_rare)$GenomeLineage, levels=c("SS","DD","AA","AABB","AABBDD","Outgroup"))
+sample_data(rcom_rare)$Status <- factor(sample_data(rcom_rare)$Status, levels=c("Wild","Cultivated"))
+RhizoGH <- subset_samples(rcom_rare, Sample_Type=="Rhizosphere")
+RootGH <- subset_samples(rcom_rare, Sample_Type=="Root")
+SoilGH <- subset_samples(rcom_rare, Sample_Type=="Soil")
+Soil_AvsI <- subset_samples(Soil, Type%in%c("Auto_Soil","Ino_Soil"))
+Soil_Ini <- subset_samples(Soil, Type%in%c("Cent_Soil","Inoculum","OG_Soil"))
+Soil_plants <- subset_samples(Soil, Type%in%c("A_Soil","B_Soil","C_Soil","E_Soil","W_Soil"))
+sGL <- subset_samples(rcom_rare, GenomeLineage%in%c("AA", "DD", "SS")) #GenomeLineageAnalysis
+sPP <- subset_samples(rcom_rare, GenomeLineage%in%c("AA", "AABB", "AABBDD")) #PolyPloidyAnalysis
+sDM <- subset_samples(rcom_rare, Status%in%c("Wild","Cultivated"))
+GLs<-subset_samples(sGL,Sample_Type=="Soil")
+GLrh<-subset_samples(sGL,Sample_Type=="Rhizosphere")
+GLroot<-subset_samples(sGL,Sample_Type=="Root")
+sDM_o<-subset_samples(sDM,GenomeLineage=="Outgroup")
+DMroot <- subset_samples(sDM,Sample_Type=="Root")
+DMrh <- subset_samples(sDM,Sample_Type=="Rhizosphere")
+DMrootsx<-subset_samples(DMroot,GenomeLineage%in%c("SS","DD","AA","AABB","AABBDD"))
+DMrhsx<-subset_samples(DMrh,GenomeLineage%in%c("SS","DD","AA","AABB","AABBDD"))
+experimentW <- subset_samples(rcom_rare, Type%in%c("A_Rh","A_Soil","A_Root","W_Rh","W_Root","W_Soil"))
+experimentW_2 <- subset_samples(experimentW, Ploidy=="2n")
+experimentW_4 <- subset_samples(experimentW, Ploidy=="4n")
+experimentW_6 <- subset_samples(experimentW, Ploidy=="6n")
+
+##Field Study 2017 data, Approach 3
+Watered <- subset_samples(poly_rare, Treatment=="Control")
+GL <- subset_samples(Watered, GenomeLineage%in%c("AA", "DD", "SS")) #GenomeLineageAnalysis
+PP <- subset_samples(Watered, GenomeLineage%in%c("AA", "AABB", "AABBDD")) #PolyPloidyAnalysis
+PP <- subset_samples(PP,SampleID!="ENT7_18_W_RH")
+PPminusLRS<- subset_samples(PP,Status%in%c("Wild","Cultivated"))
+PPm_2n <- subset_samples(PPminusLRS,Ploidy=="2n")
+PPm_4n <- subset_samples(PPminusLRS,Ploidy=="4n")
+PPm_6n <- subset_samples(PPminusLRS,Ploidy=="6n")
+DM <- subset_samples(Watered, Status%in%c("Wild","Cultivated"))
+DM_o<-subset_samples(DM,GenomeLineage=="Outgroup")
+sample_data(GL)$GenomeLineage<-factor(sample_data(GL)$GenomeLineage, levels=c("SS","DD","AA"))
+```
+##Main Figures
+###Figure 1. Overview of experimental approaches created with BioRender.com.
+###Figure 2. Diversity analyses from approach 1.
+```{r}
+####2a. Shannon Diversity, Field Study 2015 data
+p <- plot_richness(control,x="Ploidy", measures=c("Shannon")) + 
+  geom_boxplot(aes(fill=factor(Ploidy))) +
+  facet_grid(Timepoint~SampleType)+
+  scale_fill_manual(values = c("2n" = "#9dcd5e",
+                               "4n" = "#009aff",
+                               "6n" = "#0D5F8A"))+
+  geom_point(aes(fill=factor(Ploidy)), size=1)+
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank())
+p
+ggsave("Shannon_Wheat_bytreatmentTPsampletype.jpg",width=4,height=9)
+####2b. Beta Diversity, Field Study 2015 data
+orduniw = ordinate(SoilP, "PCoA", "bray", weighted=FALSE)
+p = plot_ordination(SoilP, orduniw,shape="Timepoint",color="Ploidy")+
+  geom_point(size=3)+
+  scale_colour_manual(values = c("2n" = "#9dcd5e",
+                                       "4n" = "#009aff",
+                                       "6n" = "#0D5F8A"))+
+  facet_grid(.~Treatment)+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+p
+ggsave("PCoA_controlSoil.jpg",p,width=4,height =3)
+
+orduniw = ordinate(RhizoP, "PCoA", "bray", weighted=FALSE)
+p = plot_ordination(RhizoP, orduniw,shape="Timepoint",color="Ploidy")+
+  geom_point(size=3)+
+  scale_colour_manual(values = c("2n" = "#9dcd5e",
+                                 "4n" = "#009aff",
+                                 "6n" = "#0D5F8A"))+
+  facet_grid(.~Treatment)+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+p
+ggsave("PCoA_controlRhizo.jpg",p,width=4,height =3)
+
+orduniw = ordinate(RootP, "PCoA", "bray", weighted=FALSE)
+p = plot_ordination(RootP, orduniw,shape="Timepoint",color="Ploidy")+
+  geom_point(size=3)+
+  scale_colour_manual(values = c("2n" = "#9dcd5e",
+                                 "4n" = "#009aff",
+                                 "6n" = "#0D5F8A"))+
+  facet_grid(.~Treatment)+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+p
+ggsave("PCoA_controlRoot.jpg",p,width=4,height =3)
+```
+###Figure 3. Diversity analyses from approach 2.
+```{r}
+####3a. Shannon Diversity, Greenhouse Study 2017 data
+p <- plot_richness(sDM,x="Ploidy", measures=c("Shannon")) +
+  geom_boxplot(aes(fill=factor(Ploidy))) +
+  facet_grid(Sample_Type~GenomeLineage+gGenus+Status, scales = "free", space = "free")+
+  scale_fill_manual(values = c("2n" = "#9dcd5e",
+                               "4n" = "#009aff",
+                               "6n" = "#0D5F8A"))+
+theme(legend.position = "none",
+      text=element_blank(),
+      panel.grid = element_blank())
+p
+ggsave("Shannon_GHPloidy_OfALLdata.jpg",width=9,height=8)
+####3b. Beta Diversity, Rhizosphere Subset, Greenhouse Study 2017 data
+orduniw = ordinate(DMrhsx, "PCoA", "bray", weighted=FALSE) 
+p = plot_ordination(DMrhsx, orduniw, color="Ploidy",shape="Status")+
+  geom_point(size=4)+
+  scale_color_manual(values=c("2n" = "#8ec63d",
+                              "4n" = "#009aff",
+                              "6n" = "#0D5F8A",
+                              "."="orange"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+p
+ggsave("PcoA_GH_DMRhComparisons.jpg",p,width=4,height =3)
+####3c. Beta Diversity, Root Subset, Greenhouse Study 2017 data
+orduniw = ordinate(DMrootsx, "PCoA", "bray", weighted=FALSE)
+p = plot_ordination(DMrootsx, orduniw, color="Ploidy",shape="Status")+
+  geom_point(size=4)+
+  scale_color_manual(values=c("2n" = "#8ec63d",
+                              "4n" = "#009aff",
+                              "6n" = "#0D5F8A",
+                              "."="orange"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+p
+ggsave("PcoA_GH_DMRootComparisons.jpg",p,width=4,height =3)
+```
+###Figure 4. Relative Abundance Plots from all three approaches.
+```{r}
+####4a. Relative Abundance Plot, Rhizosphere and Root Subset, Field Study 2015 data.
+glom <- tax_glom(controlns, taxrank = "Class")
+dat <- psmelt(glom)
+dat$Class <- as.character(dat$Class)
+dat$Class[dat$Abundance < 500] <- "Other"
+unique(dat$Class)
+dat$Class<-factor(dat$Class,levels=c("Other","Acidobacteria (class)","Solibacteres","Flavobacteria","Bacilli","Actinobacteria (class)","Verrucomicrobiae","AcidobacteriaPH","Deltaproteobacteria","Sphingobacteria","Gammaproteobacteria","Alphaproteobacteria","Betaproteobacteria"))
+abunplot <- ggplot(data=dat, aes(x=Ploidy, y=Abundance, fill=factor(Class)))
+newgraph = abunplot + geom_bar(stat="identity",position = "fill") +
+  facet_grid(Timepoint~SampleType+GenomeLineage, scales = "free", space = "free") +
+  scale_fill_manual(values = c("Other"="lightgrey",
+                               "Actinobacteria (class)"="#4d5b6a"
+                               ,"AcidobacteriaPH"="#6a90b4"
+                               ,"Acidobacteria (class)"="#599ec4"
+                               ,"Alphaproteobacteria"="#bf7a8f"
+                               ,"Bacilli"="#7997a1"
+                               ,"Betaproteobacteria"="#427e83" 
+                               ,"Deltaproteobacteria"="#84b59c"
+                               ,"Flavobacteria"="#919f70"
+                               ,"Gammaproteobacteria"="#686a47"
+                               ,"Gemmatimonadetes (class)"="#c8bd83"
+                               ,"Ktedonobacteria"="#cb9e59"
+                               ,"Solibacteres"="#ecc363"
+                               ,"Sphingobacteria"="#a04344"
+                               ,"Verrucomicrobiae"="#d65f3d"
+                               ,"Chloracidobacteria"="#8d8089"
+
+  ))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+newgraph
+ggsave("RelAbuncontrol_Class_PLOIDYtreatmeet.jpg",newgraph,width=8,height =9)
+####4b. Relative Abundance Plot, Rhizosphere and Roots, Greenhouse Study 2017 data.
+glomRo <- tax_glom(PPminusLRS, taxrank = "Class")
+datRo <- psmelt(glomRo)
+datRo$Class <- as.character(datRo$Class)
+datRo$Class[datRo$Abundance < 450] <- "Other"
+unique(datRo$Class)
+datRo$Class<-factor(datRo$Class,levels=c("Other","Chloracidobacteria","Gemmatimonadetes (class)","Acidobacteria (class)","Bacilli","Actinobacteria (class)","Deltaproteobacteria","Sphingobacteria","Gammaproteobacteria","Alphaproteobacteria","Betaproteobacteria"))
+abunplot <- ggplot(data=datRo, aes(x=Ploidy, y=Abundance, fill=factor(Class)))
+newgraph = abunplot + geom_bar(stat="identity",position = "fill") +
+  facet_grid(.~GenomeLineage+Status, scales = "free", space = "free") +
+  scale_fill_manual(values = c("Other"="lightgrey",
+                               "Actinobacteria (class)"="#4d5b6a"
+                               ,"AcidobacteriaPH"="#6a90b4"
+                               ,"Acidobacteria (class)"="#599ec4"
+                               ,"Alphaproteobacteria"="#bf7a8f"
+                               ,"Bacilli"="#7997a1"
+                               ,"Betaproteobacteria"="#427e83"
+                               ,"Deltaproteobacteria"="#84b59c"
+                               ,"Flavobacteria"="#919f70"
+                               ,"Gammaproteobacteria"="#686a47"
+                               ,"Gemmatimonadetes (class)"="#c8bd83"
+                               ,"Ktedonobacteria"="#cb9e59"
+                               ,"Solibacteres"="#ecc363"
+                               ,"Sphingobacteria"="#a04344"
+                               ,"Verrucomicrobiae"="#d65f3d"
+                               ,"Chloracidobacteria"="#8d8089"
+  ))+
+  theme(legend.position = "none",
+                text=element_blank(),
+        panel.grid = element_blank())
+newgraph
+ggsave("PP_RelAbun_Class.jpg",newgraph,width=8,height =9)
+####4c. Relative Abundance Plot, Rhizospheres, Field Study 2017 data.
+syPPns<-subset_samples(syPP,Sample_Type!="Soil")
+glomRo <- tax_glom(syPPns, taxrank = "Class")
+datRo <- psmelt(glomRo)
+datRo$Class <- as.character(datRo$Class)
+datRo$Class[datRo$Abundance < 300] <- "Other"
+unique(datRo$Class)
+datRo$Class<-factor(datRo$Class,levels=c("Other","Acidobacteria (class)","Bacilli","Opitutae","Actinobacteria (class)","Verrucomicrobiae","Deltaproteobacteria","Sphingobacteria","Gammaproteobacteria","Alphaproteobacteria","Betaproteobacteria"))
+abunplot <- ggplot(data=datRo, aes(x=Ploidy, y=Abundance, fill=factor(Class))) 
+newgraph = abunplot + geom_bar(stat="identity",position = "fill") +
+  facet_grid(.~Sample_Type+GenomeLineage+Status, scales = "free", space = "free") +
+  scale_fill_manual(values = c("Other"="lightgrey",
+                               "Actinobacteria (class)"="#4d5b6a"
+                               ,"AcidobacteriaPH"="#6a90b4"
+                               ,"Acidobacteria (class)"="#599ec4"
+                               ,"Alphaproteobacteria"="#bf7a8f"
+                               ,"Bacilli"="#7997a1"
+                               ,"Betaproteobacteria"="#427e83"
+                               ,"Deltaproteobacteria"="#84b59c"
+                               ,"Flavobacteria"="#919f70"
+                               ,"Gammaproteobacteria"="#686a47"
+                               ,"Gemmatimonadetes (class)"="#c8bd83"
+                               ,"Ktedonobacteria"="#cb9e59"
+                               ,"Solibacteres"="#ecc363"
+                               ,"Sphingobacteria"="#a04344"
+                               ,"Verrucomicrobiae"="#d65f3d"
+                               ,"Opitutae"="#a1c5c8"
+                               ,"Chloracidobacteria"="#8d8089"
+  ))+
+  theme(legend.position = "none",
+                text=element_blank(),
+        panel.grid = element_blank())
+newgraph
+ggsave("PP_RelAbun_Class_ReducedComplexGHstudy.jpg",newgraph,width=14,height =10)
+```
+
+##Supplementary Information
+###Figure S1. Principal coordinates analyses using Bray-Curtis dissimilarity for wheat bacterial communities from the 2015 field study (a), and greenhouse study (b).
+```{r}
+##S1a.
+orduniw = ordinate(control,"PCoA", "bray", weighted=FALSE)
+p = plot_ordination(control, orduniw, color="SampleType", shape="Ploidy")+
+  geom_point(size=3)+
+  scale_colour_manual(values = c("Soil"= "brown",
+                                 "Rhizosphere"="orange",
+                                 "Root"="gold"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+p
+ggsave("PCoA_Wheat_Control_sampletype.jpg",p,width=6,height =5)
+##S1b.
+orduniw = ordinate(experimentW, "PCoA", "bray", weighted=FALSE)
+p = plot_ordination(experimentW, orduniw, color="Sample_Type", shape="Ploidy") +
+  geom_point(size=3)+
+  scale_colour_manual(values = c("Soil"= "brown",
+                                 "Rhizosphere"="orange",
+                                 "Root"="gold"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+p
+ggsave("PCoA_GHdata_sampletype.jpg",p,width=6,height =5)
+```
+###Figure S2. Analysis of inoculum used in the greenhouse 2017 study.
+```{r}
+##S2a.
+p <- plot_richness(Soil_Ini,x="Type", measures=c("Shannon")) +
+  geom_boxplot(aes(fill=factor(Type))) +
+  scale_fill_manual(values=c("Inoculum" = "orange",
+                             "Cent_Soil" = "brown",
+                             "OG_Soil" = "black"))+
+theme(legend.position = "none",
+      text=element_blank(),
+      panel.grid = element_blank())
+p
+ggsave("Shannon_Soil_Ini.jpg",width=3,height=4)
+##S2b.
+orduniw = ordinate(Soil_Ini, "PCoA", "bray", weighted=FALSE)
+p = plot_ordination(Soil_Ini, orduniw, color="Type")+
+  geom_point(size=3)+
+  facet_grid(.~Sample_Type) +
+  scale_color_manual(values=c("Inoculum" = "orange",
+                              "Cent_Soil" = "brown",
+                              "OG_Soil" = "black"))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+p
+ggsave("PCoA_InnoculumSource.jpg",p,width=3,height=4)
+##S2c.
+glomRo <- tax_glom(Soil_Ini, taxrank = "Class")
+datRo <- psmelt(glomRo)
+datRo$Class <- as.character(datRo$Class)
+datRo$Class[datRo$Abundance < 450] <- "Other"
+unique(datRo$Class)
+datRo$Class<-factor(datRo$Class,levels=c("Other","Bacilli","Flavobacteria","Chloracidobacteria","Verrucomicrobiae","Sphingobacteria","Acidobacteria (class)","Gammaproteobacteria","Gemmatimonadetes (class)","Deltaproteobacteria","Betaproteobacteria","Alphaproteobacteria","Actinobacteria (class)"))
+abunplot <- ggplot(data=datRo, aes(x=Type, y=Abundance, fill=factor(Class)))
+newgraph = abunplot + geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c("Other"="lightgrey",
+                               "Actinobacteria (class)"="#4d5b6a"
+                               ,"AcidobacteriaPH"="#6a90b4"
+                               ,"Acidobacteria (class)"="#599ec4"
+                               ,"Alphaproteobacteria"="#bf7a8f"
+                               ,"Bacilli"="#7997a1"
+                               ,"Betaproteobacteria"="#427e83"
+                               ,"Deltaproteobacteria"="#84b59c"
+                               ,"Flavobacteria"="#919f70"
+                               ,"Gammaproteobacteria"="#686a47"
+                               ,"Gemmatimonadetes (class)"="#c8bd83"
+                               ,"Ktedonobacteria"="#cb9e59"
+                               ,"Solibacteres"="#ecc363"
+                               ,"Sphingobacteria"="#a04344"
+                               ,"Verrucomicrobiae"="#d65f3d"
+                               ,"Opitutae"="#a1c5c8"
+                               ,"Chloracidobacteria"="#8d8089"
+  ))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+newgraph
+ggsave("Soil_Ini_RelAbun_Class_ReducedComplexGHstudy.jpg",newgraph,width=3,height =4)
+```
+###Figure S3. Alpha and beta diversity analyses of wheat rhizosphere bacterial communities from the 2017 field study.
+```{r}
+##S3a. Shannon Diversity, Field Study 2017 data
+p <- plot_richness(PPm_2n,x="Ploidy", measures=c("Shannon")) +
+  geom_boxplot(aes(fill=factor(Ploidy))) +
+  facet_grid(.~Status, scales = "free", space = "free")+
+  scale_fill_manual(values = c("2n" = "#9dcd5e",
+                               "4n" = "#009aff",
+                               "6n" = "#0D5F8A"))+
+  scale_y_continuous(limits=c(4.7,6.4))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+p
+ggsave("Shannon_PP2n.jpg",p,width=3,height=8)
+p <- plot_richness(PPm_4n,x="Ploidy", measures=c("Shannon")) +
+  geom_boxplot(aes(fill=factor(Ploidy))) +
+  facet_grid(.~Status, scales = "free", space = "free")+
+  scale_fill_manual(values = c("2n" = "#9dcd5e",
+                               "4n" = "#009aff",
+                               "6n" = "#0D5F8A"))+
+  scale_y_continuous(limits=c(4.7,6.4))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+p
+ggsave("Shannon_PP4n.jpg",p,width=3,height=8)
+p <- plot_richness(PPm_6n,x="Ploidy", measures=c("Shannon")) +
+  geom_boxplot(aes(fill=factor(Ploidy))) +
+  facet_grid(.~Status, scales = "free", space = "free")+
+  scale_fill_manual(values = c("2n" = "#9dcd5e",
+                               "4n" = "#009aff",
+                               "6n" = "#0D5F8A"))+
+  scale_y_continuous(limits=c(4.7,6.4))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+p
+ggsave("Shannon_PP6n.jpg",p,width=3,height=8)
+##3b. Beta Diversity, Field Study 2017 data
+orduniw = ordinate(PPminusLRS, distance="bray", method="PCoA")
+p = plot_ordination(PPminusLRS, orduniw, color="Ploidy", shape="Status")+
+  geom_point(size=4) + 
+  scale_colour_manual(values = c("2n" = "#9dcd5e",
+                                 "4n" = "#009aff",
+                                 "6n" = "#0D5F8A"))+
+theme(legend.position = "none",
+      text=element_blank(),
+      panel.grid = element_blank())
+p
+ggsave("16S_PloidyGenomeAnalysis.jpg",p,width=6,height =5)
+```
+###Figure S4. Stacked bar graphs of phylum-level relative abundances of wheat bacterial community data from the 2015 field study.
+```{r}
+glom <- tax_glom(control, taxrank = "Phylum")
+dat <- psmelt(glom)
+dat$Phylum <- as.character(dat$Phylum)
+dat$Phylum[dat$Abundance < 500] <- "Other"
+unique(dat$Phylum)
+dat$Phylum<-factor(dat$Phylum, levels=c("Other","Chloroflexi","Gemmatimonadetes","Firmicutes","Verrucomicrobia","Actinobacteria","Acidobacteria","Bacteroidetes","Proteobacteria"))
+abunplot <- ggplot(data=dat, aes(x=Ploidy, y=Abundance, fill=factor(Phylum)))
+newgraph = abunplot + geom_bar(stat="identity",position = "fill") + facet_grid(Timepoint~SampleType+GenomeLineage, scales = "free", space = "free") +
+  scale_fill_manual(values = c("Other"="lightgrey"
+                               ,"TM7"="#d53e4f"
+                               ,"Cyanobacteria"="#f0713d"
+                               ,"Chloroflexi"="#feae61"
+                               ,"Gemmatimonadetes"="#fddf8b"
+                               ,"Firmicutes"="#e7f598"
+                               ,"Verrucomicrobia"="#acdea3"
+                               ,"Actinobacteria"="#65c3a4"
+                               ,"Acidobacteria"="#3288bd"
+                               ,"Bacteroidetes" ="#331b99"
+                               ,"Proteobacteria"="#331066"))+
+theme(legend.position = "bottom",
+      text=element_blank(),
+      panel.grid = element_blank())
+newgraph
+ggsave("RelAbuncontrol_2015FS_PHLYUM_PLOIDYtreatment.jpg",newgraph,width=13,height =14)
+```
+###Figure S5. Diversity and composition analysis of diploid genome lineages from wheat rhizosphere bacterial communities sampled in the 2017 field study.
+```{r}
+##S5a.
+DM_in<-subset_samples(DM,Genus%in%c("Aegilops","Triticum"))
+sample_data(DM_in)$GenomeLineage <-factor(sample_data(DM_in)$GenomeLineage, levels=c("SS","DD","AA","AABB","AABBDD"))
+orduniw = ordinate(DM_in, distance="bray", method="PCoA")
+p = plot_ordination(DM_in, orduniw, color="Status",shape="GenomeLineage")+
+  geom_point(size=3) +
+  scale_colour_manual(values = c("Cultivated"="#84b59c"
+                                 ,"Wild"="#bf7a8f"))+
+  scale_shape_manual(values=c(20,8,18,17,15))+
+theme(legend.position = "none",
+      text=element_blank(),
+      panel.grid = element_blank())
+p
+ggsave("16S_CultWild_GenomeAnalysis.jpg",p,width=4,height=3)
+##S5b.
+DMrh_in<-subset_samples(DMrh, gGenus%in%c("Aegilops","Triticum"))
+orduniw = ordinate(DMrh_in, "PCoA", "bray", weighted=FALSE)
+p = plot_ordination(DMrh_in, orduniw, color="Status", shape="GenomeLineage")+
+  geom_point(size=3)+
+  scale_colour_manual(values = c("Cultivated"="#84b59c"
+                                 ,"Wild"="#bf7a8f"))+
+  scale_shape_manual(values=c(20,18,17,15))+
+  theme(legend.position = "none",
+      text=element_blank(),
+      panel.grid = element_blank())
+p
+ggsave("DM_Rh_PCoA_Comparisons.jpg",p,width=4,height =3)
+##S5c.
+DMro_in<-subset_samples(DMroot, gGenus%in%c("Aegilops","Triticum"))
+orduniw = ordinate(DMro_in, "PCoA", "bray", weighted=FALSE)
+p = plot_ordination(DMro_in, orduniw, color="Status", shape="GenomeLineage")+
+  geom_point(size=3)+
+  scale_colour_manual(values = c("Cultivated"="#84b59c"
+                                 ,"Wild"="#bf7a8f"))+
+  scale_shape_manual(values=c(20,18,17,15))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+p
+ggsave("DM_Root_PCoA_Comparisons.jpg",p,width=4,height =3)
+```
+###Figure S6. Diversity and composition analysis of diploid genome lineages from root and rhizosphere bacterial data from the greenhouse 2017 study.
+```{r}
+##S6a.
+p <- plot_richness(GL,x="Ploidy", measures=c("Shannon")) +
+  geom_boxplot(aes(fill=factor(GenomeLineage))) +
+  facet_grid(.~GenomeLineage+Status+Genus, scales = "free", space = "free")+
+  scale_fill_manual(values = c("AA"="#a1c5c8"
+                               ,"DD"="#cb9e59"
+                               ,"SS"="#a04344"))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+p
+ggsave("Shannon_GL2n.jpg",width=11,height=14)
+##S6b.
+orduniw = ordinate(GL, distance="bray", method="PCoA")
+p = plot_ordination(GL, orduniw, color="GenomeLineage",shape="Status")+
+  geom_point(size=3) + 
+  scale_colour_manual(values = c("AA"="#a1c5c8"
+                                 ,"DD"="#cb9e59"
+                                 ,"SS"="#a04344"))+
+theme(legend.position = "none",
+      text=element_blank(),
+      panel.grid = element_blank())
+p
+ggsave("16S_GenomeAnalysis.jpg",p,width=3,height=4)
+##S6c.
+glomRo <- tax_glom(GL,taxrank = "Class")
+datRo <- psmelt(glomRo)
+datRo$Class <- as.character(datRo$Class)
+datRo$Class[datRo$Abundance < 535] <- "Other"
+unique(datRo$Class)
+datRo$Class<-factor(datRo$Class,levels=c("Other","Chloracidobacteria","Acidobacteria (class)","Bacilli","Solibacteres","Deltaproteobacteria","Gemmatimonadetes (class)","Flavobacteria","Verrucomicrobiae","AcidobacteriaPH","Gammaproteobacteria","Sphingobacteria","Betaproteobacteria","Alphaproteobacteria","Actinobacteria (class)"))
+abunplot <- ggplot(data=datRo, aes(x=Ploidy, y=Abundance, fill=factor(Class)))
+newgraph = abunplot + geom_bar(stat="identity",position = "fill") +
+  facet_grid(.~sample_Genus+GenomeLineage+Status, scales = "free", space = "free") +
+  scale_fill_manual(values = c("Other"="lightgrey",
+                               "Actinobacteria (class)"="#4d5b6a"
+                               ,"AcidobacteriaPH"="#6a90b4"
+                               ,"Acidobacteria (class)"="#599ec4"
+                               ,"Alphaproteobacteria"="#bf7a8f"
+                               ,"Bacilli"="#7997a1"
+                               ,"Betaproteobacteria"="#427e83"
+                               ,"Deltaproteobacteria"="#84b59c"
+                               ,"Flavobacteria"="#919f70"
+                               ,"Gammaproteobacteria"="#686a47"
+                               ,"Gemmatimonadetes (class)"="#c8bd83"
+                               ,"Ktedonobacteria"="#cb9e59"
+                               ,"Solibacteres"="#ecc363"
+                               ,"Sphingobacteria"="#a04344"
+                               ,"Verrucomicrobiae"="#d65f3d"
+  ))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+newgraph
+ggsave("RelAbun_Class_GenomeLineage.jpg",newgraph,width=11,height =14)
+```
+###Figure S7. Principal coordinates analysis of samples using Bray-Curtis dissimilarity for rhizosphere bacterial microbiome data from the 2017 field study (a), and rhizosphere (b) and root (c) bacterial microbiome data from the greenhouse 2017 study.
+```{r}
+##S7a.
+p <- plot_richness(sGL,x="Ploidy", measures=c("Shannon")) +
+  geom_boxplot(aes(fill=factor(GenomeLineage))) +
+  facet_grid(.~Sample_Type+GenomeLineage+Status, scales = "free", space = "free")+
+  scale_fill_manual(values = c("AA"="#a1c5c8"
+                               ,"DD"="#cb9e59"
+                               ,"SS"="#a04344"))+
+theme(legend.position = "none",
+      text=element_blank(),
+      panel.grid = element_blank())
+p
+ggsave("Shannon_GLs.jpg",width=10,height=9)
+##S7b.
+orduniw = ordinate(GLs, "PCoA", "bray", weighted=FALSE)
+p = plot_ordination(GLs, orduniw, color="GenomeLineage",shape="Status")+
+  geom_point(size=4)+
+  scale_color_manual(values=c("AA"="#a1c5c8"
+                              ,"DD"="#cb9e59"
+                              ,"SS"="#a04344"))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+p
+ggsave("GL_Soil_PCoA_Comparisons.jpg",p,width=4,height =4)
+orduniw = ordinate(GLrh, "PCoA", "bray", weighted=FALSE)
+p = plot_ordination(GLrh, orduniw, color="GenomeLineage",shape="Status")+
+  geom_point(size=4)+
+  scale_color_manual(values=c("AA"="#a1c5c8"
+                              ,"DD"="#cb9e59"
+                              ,"SS"="#a04344"))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+p
+ggsave("GL_Rh_PCoA_Comparisons.jpg",p,width=4,height =4)
+orduniw = ordinate(GLroot, "PCoA", "bray", weighted=FALSE)
+p = plot_ordination(GLroot, orduniw, color="GenomeLineage",shape="Status")+
+  geom_point(size=4)+
+  scale_color_manual(values=c("AA"="#a1c5c8"
+                              ,"DD"="#cb9e59"
+                              ,"SS"="#a04344"))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+p
+ggsave("GL_Root_PCoA_Comparisons.jpg",p,width=4,height =4)
+##S7c.
+glomRo <- tax_glom(sGL,taxrank = "Class")
+datRo <- psmelt(glomRo)
+head(datRo); unique(datRo$Sample_Type)
+datRo$Class <- as.character(datRo$Class)
+datRo$Class[datRo$Abundance < 500] <- "Other"
+unique(datRo$Class)
+datRo$Class<-factor(datRo$Class,levels=c("Other","Acidobacteria (class)","Bacilli","Opitutae","Actinobacteria (class)","Verrucomicrobiae","Deltaproteobacteria","Sphingobacteria","Gammaproteobacteria","Alphaproteobacteria","Betaproteobacteria"))
+abunplot <- ggplot(data=datRo, aes(x=Ploidy, y=Abundance, fill=factor(Class)))
+newgraph = abunplot + geom_bar(stat="identity",position = "fill") +
+  facet_grid(.~Sample_Type+GenomeLineage+Status, scales = "free", space = "free") +
+  scale_fill_manual(values=c("Other"="lightgrey",
+                             "Actinobacteria (class)"="#4d5b6a"
+                             ,"AcidobacteriaPH"="#6a90b4"
+                             ,"Acidobacteria (class)"="#599ec4"
+                             ,"Alphaproteobacteria"="#bf7a8f"
+                             ,"Bacilli"="#7997a1"
+                             ,"Betaproteobacteria"="#427e83"
+                             ,"Deltaproteobacteria"="#84b59c"
+                             ,"Flavobacteria"="#919f70"
+                             ,"Gammaproteobacteria"="#686a47"
+                             ,"Gemmatimonadetes (class)"="#c8bd83"
+                             ,"Ktedonobacteria"="#cb9e59"
+                             ,"Solibacteres"="#ecc363"
+                             ,"Sphingobacteria"="#a04344"
+                             ,"Verrucomicrobiae"="#d65f3d"
+                             ,"Opitutae"="#a1c5c8"
+                             ,"Chloracidobacteria"="#8d8089"
+  ))+
+  theme(legend.position = "bottom",
+        text=element_blank(),
+        panel.grid = element_blank())
+newgraph
+ggsave("RelAbun_Class_GenomeLineage.jpg",newgraph,width=10,height =9)
+```
+###Figure S8. Stacked bar graphs of phylum-level relative abundances across outgroups cotton (Gossypium sp.) and barley (Hordeum vulgare), from the 2017 field study (a) and the greenhouse study (b).
+```{r}
+##S8a.
+glom <- tax_glom(DM_o, taxrank = "Phylum")
+dat <- psmelt(glom)
+dat$Phylum <- as.character(dat$Phylum)
+dat$Phylum[dat$Abundance < 345] <- "Other"
+unique(dat$Phylum)
+dat$Phylum<-factor(dat$Phylum, levels=c("Other","TM7","Cyanobacteria","Chloroflexi","Gemmatimonadetes","Firmicutes","Verrucomicrobia","Actinobacteria","Acidobacteria","Bacteroidetes","Proteobacteria"))
+abunplot <- ggplot(data=dat, aes(x=Ploidy, y=Abundance, fill=factor(Phylum)))
+newgraph = abunplot + geom_bar(stat="identity",position = "fill") + facet_grid(.~sample_Genus+Status, scales = "free", space = "free") +
+  scale_fill_manual(values = c("Other"="lightgrey"
+                               ,"TM7"="#d53e4f"
+                               ,"Cyanobacteria"="#f0713d"
+                               ,"Chloroflexi"="#feae61"
+                               ,"Gemmatimonadetes"="#fddf8b"
+                               ,"Firmicutes"="#e7f598"
+                               ,"Verrucomicrobia"="#acdea3"
+                               ,"Actinobacteria"="#65c3a4"
+                               ,"Acidobacteria"="#3288bd"
+                               ,"Bacteroidetes" ="#331b99"
+                               ,"Proteobacteria"="#331066"))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+newgraph
+ggsave("Field_RelAbuncontrol_PHLYUM_PLOIDYtreatment.jpg",newgraph,width=5,height =9)
+##S8b.
+glom <- tax_glom(sDM_o, taxrank = "Phylum")
+dat <- psmelt(glom)
+dat$Phylum <- as.character(dat$Phylum)
+dat$Phylum[dat$Abundance < 345] <- "Other"
+unique(dat$Phylum)
+dat$Phylum<-factor(dat$Phylum, levels=c("Other","TM7","Cyanobacteria","Chloroflexi","Gemmatimonadetes","Firmicutes","Verrucomicrobia","Actinobacteria","Acidobacteria","Bacteroidetes","Proteobacteria"))
+abunplot <- ggplot(data=dat, aes(x=Ploidy, y=Abundance, fill=factor(Phylum)))
+newgraph = abunplot + geom_bar(stat="identity",position = "fill")+
+  facet_grid(.~gGenus+Sample_Type+Status, scales = "free", space = "free") +
+  scale_fill_manual(values = c("Other"="lightgrey"
+                               ,"TM7"="#d53e4f"
+                               ,"Cyanobacteria"="#f0713d"
+                               ,"Chloroflexi"="#feae61"
+                               ,"Gemmatimonadetes"="#fddf8b"
+                               ,"Firmicutes"="#e7f598"
+                               ,"Verrucomicrobia"="#acdea3"
+                               ,"Actinobacteria"="#65c3a4"
+                               ,"Acidobacteria"="#3288bd"
+                               ,"Bacteroidetes" ="#331b99"
+                               ,"Proteobacteria"="#331066"))+
+  theme(legend.position = "none",
+        text=element_blank(),
+        panel.grid = element_blank())
+newgraph
+ggsave("ReducedComOUTGROUP_RelAbuncontrol_PHLYUM_PLOIDYtreatmeet.jpg",newgraph,width=17,height =9)
+```
+
+###Supplemental Table 1. Genetic and source information on lines used for the greenhouse experiment. 
+###Supplemental Table 2. Genetic and source information on lines used for 2017 field study.
+###Supplemental Table 3. Statistics, Shannon Diversity, Field Season 2015 data.
+```{r}
+richness <- estimate_richness(control, split = TRUE, measures = c("Shannon"))
+test <- sample_data(control)
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ SampleType*Ploidy*Timepoint+Block, data = test)
+summary(test_results)
+
+richness <- estimate_richness(RootP, split = TRUE, measures = c("Shannon"))
+test <- sample_data(control)
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ Ploidy*Timepoint+Block, data = test)
+summary(test_results)
+
+richness <- estimate_richness(RhizoP, split = TRUE, measures = c("Shannon"))
+test <- sample_data(control)
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ Ploidy*Timepoint+Block, data = test)
+summary(test_results)
+
+richness <- estimate_richness(SoilP, split = TRUE, measures = c("Shannon"))
+test <- sample_data(control)
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ Ploidy*Timepoint+Block, data = test)
+summary(test_results)
+```
+#Supplemental Table 4. Statistics, Bray-Curtis, Field Season 2015 data.
+```{r}
+Wheat_rare<-rarefy_even_depth(control)
+till_dist <- phyloseq::distance(Wheat_rare, method = "bray")
+till_data <- data.frame(sample_data(Wheat_rare))
+test <- vegan::adonis(till_dist ~ SampleType*Ploidy*Timepoint+Block, data = till_data)
+test
+
+Wheat_rare<-rarefy_even_depth(RootP)
+till_dist <- phyloseq::distance(Wheat_rare, method = "bray")
+till_data <- data.frame(sample_data(Wheat_rare))
+test <- vegan::adonis(till_dist ~ Ploidy*Timepoint+Block, data = till_data)
+test
+
+Wheat_rare<-rarefy_even_depth(RhizoP)
+till_dist <- phyloseq::distance(Wheat_rare, method = "bray")
+till_data <- data.frame(sample_data(Wheat_rare))
+test <- vegan::adonis(till_dist ~ Ploidy*Timepoint+Block, data = till_data)
+test
+
+Wheat_rare<-rarefy_even_depth(SoilP)
+till_dist <- phyloseq::distance(SoilP, method = "bray")
+till_data <- data.frame(sample_data(Wheat_rare))
+test <- vegan::adonis(till_dist ~ Ploidy*Timepoint+Block, data = till_data)
+test
+```
+#Supplemental Table 5. Statistics, analysis of variance results from greenhouse 2017 study data for a) Shannon Diversity and b) Bray-Curtis dissimilarity.
+```{r}
+##Shannon Diversity
+###All data
+richness <- estimate_richness(rcom_rare, split = TRUE, measures = c("Shannon"))
+test <- sample_data(rcom_rare)
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ Sample_Type*GenomeLineage*Status*Ploidy, data = test)
+summary(test_results)
+head(sample_data(sDM))
+
+###Genome Lineage, Soil - Rhizosphere - Root
+richness <- estimate_richness(sDM, split = TRUE, measures = c("Shannon"))
+test <- sample_data(sDM)
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ GenomeLineage*Status, data = test)
+summary(test_results)
+
+richness <- estimate_richness(DMrh, split = TRUE, measures = c("Shannon"))
+test <- sample_data(DMrh)
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ GenomeLineage*Status, data = test)
+summary(test_results)
+
+richness <- estimate_richness(DMroot, split = TRUE, measures = c("Shannon"))
+test <- sample_data(DMroot)
+test <- cbind(test, richness)
+test
+test_results <- aov(Shannon ~ GenomeLineage*Status, data = test)
+summary(test_results)
+###Ploidy, Soil - Rhizosphere - Root
+richness <- estimate_richness(PPs, split = TRUE, measures = c("Shannon"))
+test <- sample_data(sPP)
+test <- cbind(test, richness)
+test
+test_results <- aov(Shannon ~ Ploidy*Status, data = test)
+summary(test_results)
+
+richness <- estimate_richness(PPrh, split = TRUE, measures = c("Shannon"))
+test <- sample_data(PPrh)
+test <- cbind(test, richness)
+test
+test_results <- aov(Shannon ~ Ploidy*Status, data = test)
+summary(test_results)
+TukeyHSD(test_results)
+
+richness <- estimate_richness(PProot, split = TRUE, measures = c("Shannon"))
+test <- sample_data(PProot)
+test <- cbind(test, richness)
+test
+test_results <- aov(Shannon ~ Ploidy*Status, data = test)
+summary(test_results)
+TukeyHSD(test_results)
+
+###Domestication Status, Soil - Rhizosphere - Root
+richness <- estimate_richness(DMs, split = TRUE, measures = c("Shannon")) #richness
+test <- sample_data(DMs)
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ GenomeLineage*Status, data = test)
+summary(test_results)
+
+richness <- estimate_richness(DMrh, split = TRUE, measures = c("Shannon")) #richness
+test <- sample_data(DMrh)
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ GenomeLineage*Status, data = test)
+summary(test_results)
+
+richness <- estimate_richness(DMroot, split = TRUE, measures = c("Shannon")) #richness
+test <- sample_data(DMroot)
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ GenomeLineage*Status, data = test)
+summary(test_results)
+
+##Bray-Curtis, beta diversity
+###All data
+till_rare <- rcom_rare
+till_dist <- phyloseq::distance(till_rare, method = "bray")
+till_data <- base::data.frame(phyloseq::sample_data(till_rare))
+test_root <- vegan::adonis(till_dist ~ Sample_Type*GenomeLineage*Status, data = till_data)
+test_root
+###Genome Lineage, Soil - Rhizosphere - Root
+till_rare <- GLs
+till_dist <- phyloseq::distance(till_rare, method = "bray")
+till_data <- base::data.frame(phyloseq::sample_data(till_rare))
+test_root <- vegan::adonis(till_dist ~ GenomeLineage*Status, data = till_data)
+test_root
+
+till_rare <- GLrh
+till_dist <- phyloseq::distance(till_rare, method = "bray")
+till_data <- base::data.frame(phyloseq::sample_data(till_rare))
+test_root <- vegan::adonis(till_dist ~ GenomeLineage*Status, data = till_data)
+test_root
+
+till_rare <- GLroot
+till_dist <- phyloseq::distance(till_rare, method = "bray")
+till_data <- base::data.frame(phyloseq::sample_data(till_rare))
+test_root <- vegan::adonis(till_dist ~ GenomeLineage*Status, data = till_data)
+test_root
+###Ploidy, Soil - Rhizosphere - Root
+till_rare <- PPs
+till_dist <- phyloseq::distance(till_rare, method = "bray")
+till_data <- base::data.frame(phyloseq::sample_data(till_rare))
+test_root <- vegan::adonis(till_dist ~ Ploidy*Status, data = till_data)
+test_root
+
+till_rare <- PPrh
+till_dist <- phyloseq::distance(till_rare, method = "bray")
+till_data <- base::data.frame(phyloseq::sample_data(till_rare))
+test_root <- vegan::adonis(till_dist ~ Ploidy*Status, data = till_data)
+test_root
+
+till_rare <- PProot
+till_dist <- phyloseq::distance(till_rare, method = "bray")
+till_data <- base::data.frame(phyloseq::sample_data(till_rare))
+test_root <- vegan::adonis(till_dist ~ Ploidy*Status, data = till_data)
+test_root
+###Domestication Status, Soil - Rhizosphere - Root
+till_rare <- DMs #phyloseq::rarefy_even_depth(DWild_Wheat)
+till_dist <- phyloseq::distance(till_rare, method = "bray")
+till_data <- base::data.frame(phyloseq::sample_data(till_rare))
+test_root <- vegan::adonis(till_dist ~ Ploidy*Status, data = till_data)
+test_root
+
+till_rare <- DMrh #phyloseq::rarefy_even_depth(DWild_Wheat)
+till_dist <- phyloseq::distance(till_rare, method = "bray")
+till_data <- base::data.frame(phyloseq::sample_data(till_rare))
+test_root <- vegan::adonis(till_dist ~ Ploidy*Status, data = till_data)
+test_root
+
+till_rare <- DMroot#phyloseq::rarefy_even_depth(DWild_Wheat)
+till_dist <- phyloseq::distance(till_rare, method = "bray")
+till_data <- base::data.frame(phyloseq::sample_data(till_rare))
+test_root <- vegan::adonis(till_dist ~ Ploidy*Status, data = till_data)
+test_root
+```
+#Supplemental Table 6. Statistics, analysis of variance results from 2017 field experiment data for a) Shannon Diversity and b) Bray-Curtis dissimilarity.
+```{r}
+##Genome Lineage
+richness <- estimate_richness(sGL, split = TRUE, measures = c("Shannon"))
+test <- sample_data(sGL)
+test <- test[,c(2:15)]
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ Ploidy*Status*Block, data = test)
+summary(test_results)
+##Ploidy
+richness <- estimate_richness(PPminusLRS, split = TRUE, measures = c("Shannon"))
+test <- sample_data(PPminusLRS)
+test <- test[,c(2:15)]
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ Ploidy*Status*Block, data = test)
+summary(test_results)
+##Domestication Status
+richness <- estimate_richness(DM, split = TRUE, measures = c("Shannon"))
+test <- sample_data(DM)
+test <- test[,c(2:15)]
+test <- cbind(test, richness)
+test_results <- aov(Shannon ~ GenomeLineage*Status*Block, data = test)
+summary(test_results)
+```
