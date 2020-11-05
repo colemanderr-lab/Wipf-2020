@@ -1,4 +1,5 @@
-## Domestication and Ploidy Influence Assembly of the Wheat Bacterial Microbiome
+## Wipf-2020
+# Domestication and Ploidy Influence Assembly of the Wheat Bacterial Microbiome
 *Heidi Wipf and Devin Coleman-Derr*
 
 Link to final publication: 
