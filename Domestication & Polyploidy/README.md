@@ -13,4 +13,4 @@ Included in this folder:
 + Field Study 2017 / new_otu_table.biom - an unfiltered OTU table created via QIIME2
 + Field Study 2017 / ploid_metadata.txt - a table of metadata associated with samples
 
-Raw sequence files have been uploaded to NCBI under BioProject PRJNA (https://www.ncbi.nlm.nih.gov/bioproject/)
+Raw sequence files have been uploaded to NCBI under BioProjects [PRJNA369551](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA369551), PRJNA675221, and [](https://www.ncbi.nlm.nih.gov/bioproject/).
