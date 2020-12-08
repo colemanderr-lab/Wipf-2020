@@ -23,4 +23,4 @@ Included in this folder:
 + new_combo.csv.zip - a table of metadata associated with meta-transcriptome samples, compressed
 + CAZyPutative.csv - a table of metadata associated with meta-transcriptome samples
 
-Raw sequence files have been uploaded to NCBI under BioProjects [PRJNA683037](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA683037), [PRJNA682819](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA682819), and [IMG ID 3300029287](https://gold.jgi.doe.gov/study?id=Gs0133540).
+Raw sequence files have been uploaded to NCBI under BioProjects [PRJNA683037](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA683037) and [PRJNA682819](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA682819). Meta-transcriptome data can be found at [IMG ID 3300029287](https://gold.jgi.doe.gov/study?id=Gs0133540).
