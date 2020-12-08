@@ -1,0 +1,126 @@
+PutativeSubstrate,GeneAnnotation,AssignedCAZy,Annotation,Notes
+Cell Wall,Lysozyme,GH25,catalase,.
+Cell Wall,Membrane-bound Lytic murein transglycosylase A,GH102,catalase/hydroperoxidase HPI,.
+Cell Wall,Membrane-bound Lytic murein transglycosylase B,GH103,catalase/peroxidase,.
+Cell Wall,,GH23,catalase/peroxidase HPI,.
+Cell Wall,Membrane-bound Lytic murein transglycosylase C,GH23,catalase/peroxidase HPI,.
+Cell Wall,Membrane-bound Lytic murein transglycosylase D,GH23,cpeB; catalase/peroxidase,.
+Cellulose,Cellulase,GH12,katG; catalase,.
+Cellulose,,GH5,katG; catalase,.
+Cellulose,,GH6,katG; catalase peroxidase,.
+Cellulose,,GH74,katG; catalase-peroxidase,.
+Cellulose,Cellulase [EC:3.2.1.4],GH45,katG; catalase-peroxidase,.
+Cellulose,,GH5,katG; catalase-peroxidase,.
+Cellulose,,GH51,katG; peroxidase/catalase katG,.
+Cellulose,,GH6,katGa; peroxidase/catalase oxidoreductase,.
+Cellulose,,GH74,Tannan or Ferulic Acid Tannase and feruloyl esterase,.
+Cellulose,Cellulase [EC:3.2.1.91],GH48,Chitin deacetylase,EC:3.5.1.41
+Cellulose,"Cellulose 1,4-beta-cellobiosidase [EC:3.2.1.91]",GH48,Acetyl xylan esterase,.
+Cellulose,,GH6,Xylanase/chitin deacetylase,.
+Cellulose,Endoglucanase [EC:3.2.1.4] (Berlemont and Martiny 2013),GH12,Cutinase,EC:3.1.1.74
+Cellulose,,GH5,Pectinesterase,EC:3.1.1.11
+Cellulose,,GH6,6-phospho-beta-glucosidase,EC:3.2.1.86
+Cellulose,,GH74,Beta-glucosidase,EC:3.2.1.21
+Cellulose,,GH8,Cellulase/xylanase,.
+Cellulose,,GH9,"Endo-1,4-beta-xylanase",EC:3.2.1.8
+Chitin,Beta-N-acetylhexosaminidase [EC:3.2.1.52] (Konno et al. 2012),GH3,Membrane-bound Lytic murein transglycosylase A,.
+Chitin,Chitin deacetylase [EC:3.5.1.41],CE4,Membrane-bound Lytic murein transglycosylase B,.
+Chitin,Chitinase [EC:3.2.1.14],GH18,Unsaturated rhamnogalacturonyl hydrolase,EC:3.2.1.172
+Chitin,Mannosyl-glycoprotein endo-beta-N-acetylglucosaminidase,GH73,"Endo-1,4-beta-xylanase",EC:3.2.1.8
+Cutin,Cutinase [EC:3.1.1.74],CE5,Cellulase,.
+Disaccharides,6-phospho-beta-glucosidase [EC:3.2.1.86] (Yu et al. 2013),GH1,Endoglucanase,EC:3.2.1.4
+Disaccharides,,GH4,"Xyloglucan-specific endo-beta-1,4-glucanase",EC:3.2.1.151
+Disaccharides,Cellobiose phosphorylase [EC:2.4.1.20],GH94,Glycogen debranching enzyme,.
+Fructan,Levanase [EC:3.2.1.65],GH32,Alpha-amylase,.
+Glycogen,"Amylo-alpha-1,6-glucosidase",GH78,Alpha-amylase,EC:3.2.1.1
+Glycogen,Glycogen debranching enzyme,GH13,Alpha-glucosidase,.
+Glycogen,,GH133,Alpha-glucosidase,EC:3.2.1.20
+Lignin,catalase,AA2,Isoamylase,.
+Lignin,catalase/hydroperoxidase HPI(I),AA2,Maltodextrin glucosidase,.
+Lignin,catalase/peroxidase,AA2,Maltooligosyltrehalose trehalohydrolase,EC:3.2.1.141
+Lignin,catalase/peroxidase HPI,AA2,"Oligo-1,6-glucosidase",EC:3.2.1.10
+Lignin,catalase/peroxidase HPI (EC:1.11.1.6),AA2,Pullulanase,EC:3.2.1.41
+Lignin,cpeB; catalase/peroxidase,AA2,Trehalose-6-phosphate hydrolase,EC:3.2.1.93
+Lignin,katG; catalase (EC:1.11.1.6 1.11.1.7),AA2,Glycogen debranching enzyme,.
+Lignin,katG; catalase (EC:1.11.1.6),AA2,Glucoamylase,.
+Lignin,katG; catalase peroxidase (EC:1.11.1.21),AA2,"Glucan 1,3-beta-glucosidase",.
+Lignin,katG; catalase-peroxidase,AA2,"1,3-beta-glucanase",.
+Lignin,katG; catalase-peroxidase (EC:1.11.1.21),AA2,"Endo-1,3-1,4-beta-glycanase",.
+Lignin,katG; catalase-peroxidase (EC:1.11.1.6),AA2,"Endo-beta-1,3-1,4 glucanase",.
+Lignin,katG; peroxidase/catalase katG (EC:1.11.1.7 1.11.1.8),AA2,"Endo-beta-1,3-1,4 glucanase",.
+Lignin,katGa; peroxidase/catalase oxidoreductase (EC:1.11.1.6),AA2,Unspecified beta-glucanase,EC:3.2.1.73
+Cellulose-Oligosaccharide,"Beta-glucosidase [EC:3.2.1.21] (Berlemont and Martiny 2013, Bergmann et al. 2014)",GH1,Chitinase,EC:3.2.1.14
+Cellulose-Oligosaccharide,,GH3,Beta-galactosidase,EC:3.2.1.23
+Cellulose-Oligosaccharide,Unspecified beta-glucosidase,GH3,Beta-glucuronidase,EC:3.2.1.31
+Xylan-Oligosaccharide,Alpha-D-xyloside xylohydrolase [EC:3.2.1.177]			,GH31,Beta-mannosidase,EC:3.2.1.25
+Xylan-Oligosaccharide,Alpha-D-xyloside xylohydrolase [EC:3.2.1.177],GH31,Membrane-bound Lytic murein transglycosylase B,.
+Xylan-Oligosaccharide,Beta-xylosidase (Bajpai 1997),GH39,Membrane-bound Lytic murein transglycosylase C,.
+Xylan-Oligosaccharide,,GH43,Membrane-bound Lytic murein transglycosylase D,.
+Xylan-Oligosaccharide,Oligosaccharide reducing-end xylanase [EC:3.2.1.156],GH8,Lysozyme,.
+Xylan-Oligosaccharide,"Xylan 1,4-beta-xylosidase [EC:3.2.1.37]",GH39,Polygalacturonase,EC:3.2.1.15
+Xylan-Oligosaccharide,,GH43,Alpha-L-fucosidase,.
+Xylan-Oligosaccharide,,GH54,Alpha-L-fucosidase,EC:3.2.1.51
+Xylan-Oligosaccharide,Xylosidase/arabinosidase,GH43,Beta-N-acetylhexosaminidase,EC:3.2.1.52
+Oligosaccharides, Alpha-galactosidase [EC:3.2.1.22],GH36,Beta-glucosidase,EC:3.2.1.21
+Oligosaccharides,,GH4,Unspecified beta-glucosidase,.
+Oligosaccharides,Alpha-L-fucosidase (Cao et al. 2014),GH29,"Glucuronoarabinoxylan endo-1,4-beta-xylanase",EC:3.2.1.136
+Oligosaccharides,Alpha-L-fucosidase [EC:3.2.1.51],GH29,Alpha-D-xyloside xylohydrolase,EC:3.2.1.177
+Oligosaccharides,,GH95,Alpha-D-xyloside xylohydrolase,EC:3.2.1.177
+Oligosaccharides,Beta-galactosidase [EC:3.2.1.23],GH2,Alpha-glucosidase,EC:3.2.1.20
+Oligosaccharides,,GH35,Levanase,EC:3.2.1.65
+Oligosaccharides,,GH42,Beta-galactosidase,EC:3.2.1.23
+Oligosaccharides,Beta-glucuronidase [EC:3.2.1.31],GH2,Alpha-galactosidase,EC:3.2.1.22
+Oligosaccharides,Beta-mannosidase [EC:3.2.1.25],GH2,Alpha-mannosidase,EC:3.2.1.24
+Oligosaccharides,"Glucan 1,3-beta-glucosidase",GH16,Beta-xylosidase,.
+Other Polysaccharide,"1,3-beta-glucanase",GH16,"Xylan 1,4-beta-xylosidase",EC:3.2.1.37
+Other Polysaccharide,,GH55,6-phospho-beta-glucosidase,EC:3.2.1.86
+Other Polysaccharide,Alpha-L-rhamnosidase [EC:3.2.1.40],GH78,Alpha-galactosidase,EC:3.2.1.22
+Other Polysaccharide,Alpha-mannosidase [EC:3.2.1.24] (Moreira and Filho 2008),GH38,Beta-galactosidase,EC:3.2.1.23
+Other Polysaccharide,"Arabinan endo-1,5-alpha-L-arabinosidase [EC:3.2.1.99]",GH43,Beta-xylosidase,.
+Other Polysaccharide,"Endo-1,3-1,4-beta-glycanase",GH16,"Xylan 1,4-beta-xylosidase",EC:3.2.1.37
+Other Polysaccharide,"Endo-beta-1,3-1,4 glucanase (EC:3.2.1.73) (Kuge et al. 2015)",GH16,Xylosidase/arabinosidase,.
+Other Polysaccharide,"Endo-beta-1,3-1,4 glucanase (EC:3.2.1.73) (Kuge et al. 2015)",GH16,"Arabinan endo-1,5-alpha-L-arabinosidase",EC:3.2.1.99
+Other Polysaccharide,"Mannan endo-1,4-beta-mannosidase [EC:3.2.1.78] (de Vries and	Visser 2001)",GH5,"Endo-1,4-beta-xylanase",EC:3.2.1.8
+Other Polysaccharide,Poly(beta-D-mannuronate) lyase [EC:4.2.2.3] (Zhu and Yin 2015),PL9,Alpha-N-arabinofuranosidase,EC:3.2.1.55
+Other Polysaccharide,Unspecified beta-glucanase [EC:3.2.1.73],GH16,Arabinoxylan arabinofuranohydrolase,EC:3.2.1.55
+Other Polysaccharide,Xylanase/chitin deacetylase,CE4	,Cellulase,EC:3.2.1.4
+Pectin,Pectate lyase (Abbott and Boraston 2008),PL9,Cellulase,EC:3.2.1.91
+Pectin,Pectate lyase [EC:4.2.2.2],PL1,"Cellulose 1,4-beta-cellobiosidase",EC:3.2.1.91
+Pectin,Pectinesterase [EC:3.1.1.11] (Abbott and Boraston 2008),CE8,Cellulase,.
+Pectin,Polygalacturonase [EC:3.2.1.15] (Abbott and Boraston 2008),GH28,Cellulase,EC:3.2.1.4
+Pectin,Rhamnogalacturonan endolyase [EC:4.2.2.23],PL4,Endoglucanase,EC:3.2.1.4
+Pectin,Unsaturated rhamnogalacturonyl hydrolase [EC:3.2.1.172] (Silva et al. 2016),GH105,"Mannan endo-1,4-beta-mannosidase",EC:3.2.1.78
+Pectin Accessory,"Arabinogalactan endo-1,4-beta-galactosidase [EC:3.2.1.89] (Abbott and Boraston 2008)",GH53,"Beta-1,4-xylanase",EC:3.2.1.8
+Sialic Acid,Sialidase-1 [EC:3.2.1.18] (Severi et al. 2007),GH74,Cellulase,EC:3.2.1.4
+Starch,Alpha-amylase,GH13,Alpha-N-arabinofuranosidase,EC:3.2.1.55
+Starch,Alpha-amylase [EC:3.2.1.1],GH13,"Arabinogalactan endo-1,4-beta-galactosidase",EC:3.2.1.89
+Starch,Alpha-amylase/alpha-mannosidase,GH57,"Xylan 1,4-beta-xylosidase",EC:3.2.1.37
+Starch,Alpha-glucosidase,GH13,Alpha-N-arabinofuranosidase,EC:3.2.1.55
+Starch,Alpha-glucosidase [EC:3.2.1.20],GH13,"1,3-beta-glucanase",.
+Starch,,GH31,Alpha-amylase/alpha-mannosidase,.
+Starch,,GH97,Cellulase,.
+Starch,Glucoamylase,GH15,Cellulase,EC:3.2.1.4
+Starch,Isoamylase,GH13,"Cellulose 1,4-beta-cellobiosidase",EC:3.2.1.91
+Starch,Maltodextrin glucosidase,GH13,Endoglucanase,EC:3.2.1.4
+Starch,Maltooligosyltrehalose trehalohydrolase [EC:3.2.1.141],GH13,"Beta-1,4-xylanase",EC:3.2.1.8
+Starch,"Oligo-1,6-glucosidase [EC:3.2.1.10]",GH13,"Endo-1,4-beta-xylanase",EC:3.2.1.8
+Starch,Pullulanase [EC:3.2.1.41],GH13,Alpha-N-arabinofuranosidase,EC:3.2.1.55
+Starch,Tannan or Ferulic Acid Tannase and feruloyl esterase		,CE1,"Trehalose Alpha,alpha-trehalose phosphorylase",EC:2.4.1.64
+Starch,"Trehalose Alpha,alpha-trehalose phosphorylase [EC:2.4.1.64]",GH65,Mannosyl-glycoprotein endo-beta-N-acetylglucosaminidase,.
+Starch,Trehalose-6-phosphate hydrolase [EC:3.2.1.93] ,GH13,Cellulase,.
+Xylan,"Beta-1,4-xylanase [EC:3.2.1.8] (Barcelos et al. 2015)",GH5,Cellulase,EC:3.2.1.4
+Xylan,,GH62,Endoglucanase,EC:3.2.1.4
+Xylan,Cellulase/xylanase,GH10,Sialidase-1,EC:3.2.1.18
+Xylan,"Endo-1,4-beta-xylanase [EC:3.2.1.8] (Barcelos et al. 2015)",GH10,"Xyloglucan-specific exo-beta-1,4-glucanase",EC:3.2.1.155
+Xylan,,GH11,"Amylo-alpha-1,6-glucosidase",.
+Xylan,,GH43,Alpha-L-rhamnosidase,EC:3.2.1.40
+Xylan,,GH62,Endoglucanase,EC:3.2.1.4
+Xylan,"Glucuronoarabinoxylan endo-1,4-beta-xylanase [EC:3.2.1.136]",GH30,Oligosaccharide reducing-end xylanase,EC:3.2.1.156
+Xylan Accessory,Acetyl xylan esterase (Zhang et al. 2011),CE4,Endoglucanase,EC:3.2.1.4
+Xylan Accessory,Alpha-N-arabinofuranosidase [EC:3.2.1.55] (Rahman et al. 2003),GH43,Cellobiose phosphorylase,EC:2.4.1.20
+Xylan Accessory,,GH51,Alpha-L-fucosidase,EC:3.2.1.51
+Xylan Accessory,,GH54,Alpha-glucosidase,EC:3.2.1.20
+Xylan Accessory,,GH62,Pectate lyase,EC:4.2.2.2
+Xylan Accessory,Arabinoxylan arabinofuranohydrolase [EC:3.2.1.55],GH43,Rhamnogalacturonan endolyase,EC:4.2.2.23
+Xyloglucan,"Xyloglucan-specific endo-beta-1,4-glucanase [EC:3.2.1.151]",GH12,Poly,.
+Xyloglucan,"Xyloglucan-specific exo-beta-1,4-glucanase [EC:3.2.1.155] (de Vries and Visser 2001)				",GH74,Pectate lyase,.

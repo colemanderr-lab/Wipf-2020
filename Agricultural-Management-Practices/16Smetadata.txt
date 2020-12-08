@@ -1,0 +1,245 @@
+Sample_ID	Timepoint	Block	Treatment	Block_Position	Sample_Type	Tilling	Cover_Crop	Depth	Development		Comments
+TP1_B1_ctcc_R1_Rh	TP1	B1	ctcc	R1	Rhizosphere	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B1_ctcc_R1_Root	TP1	B1	ctcc	R1	Root	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B1_ctcc_R1_Soil	TP1	B1	ctcc	R1	Soil	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B1_ctcc_R2_Rh	TP1	B1	ctcc	R2	Rhizosphere	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B1_ctcc_R2_Root	TP1	B1	ctcc	R2	Root	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B1_ctcc_R2_Soil	TP1	B1	ctcc	R2	Soil	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B1_ctcc_R3_Rh	TP1	B1	ctcc	R3	Rhizosphere	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B1_ctcc_R3_Root	TP1	B1	ctcc	R3	Root	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B1_ctcc_R3_Soil	TP1	B1	ctcc	R3	Soil	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B1_ctno_R1_Rh	TP1	B1	ctno	R1	Rhizosphere	Conservation	Fallow	.	Pre-flowering		.
+TP1_B1_ctno_R1_Soil	TP1	B1	ctno	R1	Soil	Conservation	Fallow	.	Pre-flowering		.
+TP1_B1_ctno_R2_Rh	TP1	B1	ctno	R2	Rhizosphere	Conservation	Fallow	.	Pre-flowering		.
+TP1_B1_ctno_R2_Root	TP1	B1	ctno	R2	Root	Conservation	Fallow	.	Pre-flowering		.
+TP1_B1_ctno_R2_Soil	TP1	B1	ctno	R2	Soil	Conservation	Fallow	.	Pre-flowering		.
+TP1_B1_ctno_R3_Rh	TP1	B1	ctno	R3	Rhizosphere	Conservation	Fallow	.	Pre-flowering		.
+TP1_B1_ctno_R3_Root	TP1	B1	ctno	R3	Root	Conservation	Fallow	.	Pre-flowering		.
+TP1_B1_ctno_R3_Soil	TP1	B1	ctno	R3	Soil	Conservation	Fallow	.	Pre-flowering		.
+TP1_B1_stcc_R1_Rh	TP1	B1	stcc	R1	Rhizosphere	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B1_stcc_R1_Root	TP1	B1	stcc	R1	Root	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B1_stcc_R1_Soil	TP1	B1	stcc	R1	Soil	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B1_stcc_R3_Rh	TP1	B1	stcc	R3	Rhizosphere	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B1_stcc_R3_Root	TP1	B1	stcc	R3	Root	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B1_stno_R1_Rh	TP1	B1	stno	R1	Rhizosphere	Standard	Fallow	.	Pre-flowering		.
+TP1_B1_stno_R1_Root	TP1	B1	stno	R1	Root	Standard	Fallow	.	Pre-flowering		.
+TP1_B1_stno_R1_Soil	TP1	B1	stno	R1	Soil	Standard	Fallow	.	Pre-flowering		.
+TP1_B1_stno_R2_Rh	TP1	B1	stno	R2	Rhizosphere	Standard	Fallow	.	Pre-flowering		.
+TP1_B1_stno_R2_Soil	TP1	B1	stno	R2	Soil	Standard	Fallow	.	Pre-flowering		.
+TP1_B1_stno_R3_Rh	TP1	B1	stno	R3	Rhizosphere	Standard	Fallow	.	Pre-flowering		.
+TP1_B1_stno_R3_Root	TP1	B1	stno	R3	Root	Standard	Fallow	.	Pre-flowering		.
+TP1_B1_stno_R3_Soil	TP1	B1	stno	R3	Soil	Standard	Fallow	.	Pre-flowering		.
+TP1_B2_ctcc_R1_Rh	TP1	B2	ctcc	R1	Rhizosphere	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B2_ctcc_R1_Root	TP1	B2	ctcc	R1	Root	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B2_ctcc_R1_Soil	TP1	B2	ctcc	R1	Soil	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B2_ctcc_R2_Rh	TP1	B2	ctcc	R2	Rhizosphere	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B2_ctcc_R2_Root	TP1	B2	ctcc	R2	Root	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B2_ctcc_R2_Soil	TP1	B2	ctcc	R2	Soil	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B2_ctcc_R3_Root	TP1	B2	ctcc	R3	Root	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B2_ctcc_R3_Soil	TP1	B2	ctcc	R3	Soil	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B2_ctno_R1_Rh	TP1	B2	ctno	R1	Rhizosphere	Conservation	Fallow	.	Pre-flowering		.
+TP1_B2_ctno_R1_Root	TP1	B2	ctno	R1	Root	Conservation	Fallow	.	Pre-flowering		.
+TP1_B2_ctno_R1_Soil	TP1	B2	ctno	R1	Soil	Conservation	Fallow	.	Pre-flowering		.
+TP1_B2_ctno_R2_Rh	TP1	B2	ctno	R2	Rhizosphere	Conservation	Fallow	.	Pre-flowering		.
+TP1_B2_ctno_R2_Root	TP1	B2	ctno	R2	Root	Conservation	Fallow	.	Pre-flowering		.
+TP1_B2_ctno_R2_Soil	TP1	B2	ctno	R2	Soil	Conservation	Fallow	.	Pre-flowering		.
+TP1_B2_ctno_R3_Rh	TP1	B2	ctno	R3	Rhizosphere	Conservation	Fallow	.	Pre-flowering		.
+TP1_B2_ctno_R3_Root	TP1	B2	ctno	R3	Root	Conservation	Fallow	.	Pre-flowering		.
+TP1_B2_ctno_R3_Soil	TP1	B2	ctno	R3	Soil	Conservation	Fallow	.	Pre-flowering		.
+TP1_B2_stcc_R1_Rh	TP1	B2	stcc	R1	Rhizosphere	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B2_stcc_R1_Root	TP1	B2	stcc	R1	Root	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B2_stcc_R1_Soil	TP1	B2	stcc	R1	Soil	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B2_stcc_R2_Rh	TP1	B2	stcc	R2	Rhizosphere	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B2_stcc_R2_Root	TP1	B2	stcc	R2	Root	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B2_stcc_R2_Soil	TP1	B2	stcc	R2	Soil	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B2_stcc_R3_Rh	TP1	B2	stcc	R3	Rhizosphere	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B2_stcc_R3_Root	TP1	B2	stcc	R3	Root	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B2_stcc_R3_Soil	TP1	B2	stcc	R3	Soil	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B2_stno_R1_Rh	TP1	B2	stno	R1	Rhizosphere	Standard	Fallow	.	Pre-flowering		.
+TP1_B2_stno_R1_Root	TP1	B2	stno	R1	Root	Standard	Fallow	.	Pre-flowering		.
+TP1_B2_stno_R2_Rh	TP1	B2	stno	R2	Root	Standard	Fallow	.	Pre-flowering		.
+TP1_B2_stno_R2_Root	TP1	B2	stno	R2	Soil	Standard	Fallow	.	Pre-flowering		.
+TP1_B2_stno_R2_Soil	TP1	B2	stno	R1	Soil	Standard	Fallow	.	Pre-flowering		.
+TP1_B2_stno_R3_Rh	TP1	B2	stno	R3	Root	Standard	Fallow	.	Pre-flowering		.
+TP1_B2_stno_R3_Root	TP1	B2	stno	R3	Rhizosphere	Standard	Fallow	.	Pre-flowering		.
+TP1_B2_stno_R3_Soil	TP1	B2	stno	R3	Soil	Standard	Fallow	.	Pre-flowering		.
+TP1_B2_stno_r1_Soil	TP1	B2	stno	R2	Rhizosphere	Standard	Fallow	.	Pre-flowering		.
+TP1_B3_ctcc_R1_Rh	TP1	B3	ctcc	R1	Rhizosphere	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B3_ctcc_R1_Root	TP1	B3	ctcc	R1	Root	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B3_ctcc_R1_Soil	TP1	B3	ctcc	R1	Soil	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B3_ctcc_R2_Rh	TP1	B3	ctcc	R2	Rhizosphere	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B3_ctcc_R2_Soil	TP1	B3	ctcc	R2	Soil	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B3_ctcc_R3_Rh	TP1	B3	ctcc	R3	Rhizosphere	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B3_ctcc_R3_Root	TP1	B3	ctcc	R3	Root	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B3_ctcc_R3_Rootb	TP1	B3	ctcc	R3	Root	Conservation	Cover-Crop	b	Pre-flowering		.
+TP1_B3_ctcc_R3_Soil	TP1	B3	ctcc	R3	Soil	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B3_ctcc_Rh_D0	TP1	B3	ctcc	Rh	Rhizosphere	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B3_ctcc_Rh_D10	TP1	B3	ctcc	Rh	Rhizosphere	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B3_ctcc_Rh_D5	TP1	B3	ctcc	Rh	Rhizosphere	Conservation	Cover-Crop	.	Pre-flowering		.
+TP1_B3_ctno_R1_Rh	TP1	B3	ctno	R1	Rhizosphere	Conservation	Fallow	D0	Pre-flowering		.
+TP1_B3_ctno_R1_Root	TP1	B3	ctno	R1	Root	Conservation	Fallow	D10	Pre-flowering		.
+TP1_B3_ctno_R1_Soil	TP1	B3	ctno	R1	Soil	Conservation	Fallow	D5	Pre-flowering		.
+TP1_B3_ctno_R2_Rh	TP1	B3	ctno	R2	Rhizosphere	Conservation	Fallow	.	Pre-flowering		.
+TP1_B3_ctno_R2_Root	TP1	B3	ctno	R2	Root	Conservation	Fallow	.	Pre-flowering		.
+TP1_B3_ctno_R2_Soil	TP1	B3	ctno	R2	Soil	Conservation	Fallow	.	Pre-flowering		.
+TP1_B3_ctno_R3_Rh	TP1	B3	ctno	R3	Rhizosphere	Conservation	Fallow	.	Pre-flowering		.
+TP1_B3_ctno_R3_Root	TP1	B3	ctno	R3	Root	Conservation	Fallow	.	Pre-flowering		.
+TP1_B3_ctno_R3_Soil	TP1	B3	ctno	R3	Soil	Conservation	Fallow	.	Pre-flowering		.
+TP1_B3_stcc_R1_Root	TP1	B3	stcc	R1	Rhizosphere	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B3_stcc_R1_Soil	TP1	B3	stcc	R1	Root	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B3_stcc_R2_Root	TP1	B3	stcc	R2	Root	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B3_stcc_R2_Soil	TP1	B3	stcc	R2	Soil	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B3_stcc_R3_Rh	TP1	B3	stcc	R3	Rhizosphere	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B3_stcc_R3_Soil	TP1	B3	stcc	R3	Soil	Standard	Cover-Crop	.	Pre-flowering		.
+TP1_B3_stno_R1_Rh	TP1	B3	stno	R1	Rhizosphere	Standard	Fallow	.	Pre-flowering		.
+TP1_B3_stno_R1_Root	TP1	B3	stno	R1	Root	Standard	Fallow	.	Pre-flowering		.
+TP1_B3_stno_R1_Soil	TP1	B3	stno	R1	Soil	Standard	Fallow	.	Pre-flowering		.
+TP1_B3_stno_R2_Rh	TP1	B3	stno	R2	Rhizosphere	Standard	Fallow	.	Pre-flowering		.
+TP1_B3_stno_R2_Root	TP1	B3	stno	R2	Root	Standard	Fallow	.	Pre-flowering		.
+TP1_B3_stno_R2_Soil	TP1	B3	stno	R2	Soil	Standard	Fallow	.	Pre-flowering		.
+TP1_B3_stno_R3_Rh	TP1	B3	stno	R3	Rhizosphere	Standard	Fallow	.	Pre-flowering		.
+TP1_B3_stno_R3_Root	TP1	B3	stno	R3	Root	Standard	Fallow	.	Pre-flowering		.
+TP1_B3_stno_R3_Soil	TP1	B3	stno	R3	Soil	Standard	Fallow	.	Pre-flowering		.
+TP2_B1_ctcc_R1_Rh	TP2	B1	ctcc	R1	Rhizosphere	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B1_ctcc_R1_Root	TP2	B1	ctcc	R1	Root	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B1_ctcc_R1_Soil	TP2	B1	ctcc	R1	Soil	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B1_ctcc_R2_Rh	TP2	B1	ctcc	R2	Rhizosphere	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B1_ctcc_R2_Root	TP2	B1	ctcc	R2	Root	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B1_ctcc_R2_Soil	TP2	B1	ctcc	R2	Soil	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B1_ctcc_R3_Rh	TP2	B1	ctcc	R3	Rhizosphere	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B1_ctcc_R3_Root	TP2	B1	ctcc	R3	Root	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B1_ctcc_R3_Soil	TP2	B1	ctcc	R3	Soil	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B1_ctno_R1_Rh	TP2	B1	ctno	R1	Rhizosphere	Conservation	Fallow	.	Post-flowering		.
+TP2_B1_ctno_R1_Root	TP2	B1	ctno	R1	Root	Conservation	Fallow	.	Post-flowering		.
+TP2_B1_ctno_R1_Soil	TP2	B1	ctno	R1	Soil	Conservation	Fallow	.	Post-flowering		.
+TP2_B1_ctno_R2_Rh	TP2	B1	ctno	R2	Rhizosphere	Conservation	Fallow	.	Post-flowering		.
+TP2_B1_ctno_R2_Root	TP2	B1	ctno	R2	Root	Conservation	Fallow	.	Post-flowering		.
+TP2_B1_ctno_R2_Soil	TP2	B1	ctno	R2	Soil	Conservation	Fallow	.	Post-flowering		.
+TP2_B1_ctno_R3_Rh	TP2	B1	ctno	R3	Rhizosphere	Conservation	Fallow	.	Post-flowering		.
+TP2_B1_ctno_R3_Root	TP2	B1	ctno	R3	Root	Conservation	Fallow	.	Post-flowering		.
+TP2_B1_ctno_R3_Soil	TP2	B1	ctno	R3	Soil	Conservation	Fallow	.	Post-flowering		.
+TP2_B1_stcc_R1_Rh	TP2	B1	stcc	R1	Rhizosphere	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B1_stcc_R1_Root	TP2	B1	stcc	R1	Root	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B1_stcc_R1_Soil	TP2	B1	stcc	R1	Soil	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B1_stcc_R2_Rh	TP2	B1	stcc	R2	Rhizosphere	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B1_stcc_R2_Root	TP2	B1	stcc	R2	Root	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B1_stcc_R2_Soil	TP2	B1	stcc	R2	Soil	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B1_stcc_R3_Rh	TP2	B1	stcc	R3	Rhizosphere	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B1_stcc_R3_Root	TP2	B1	stcc	R3	Root	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B1_stcc_R3_Soil	TP2	B1	stcc	R3	Soil	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B1_stno_R1_Rh	TP2	B1	stno	R1	Rhizosphere	Standard	Fallow	.	Post-flowering		.
+TP2_B1_stno_R1_Root	TP2	B1	stno	R1	Root	Standard	Fallow	.	Post-flowering		.
+TP2_B1_stno_R1_Soil	TP2	B1	stno	R1	Soil	Standard	Fallow	.	Post-flowering		.
+TP2_B1_stno_R2_Rh	TP2	B1	stno	R2	Rhizosphere	Standard	Fallow	.	Post-flowering		.
+TP2_B1_stno_R2_Root	TP2	B1	stno	R2	Root	Standard	Fallow	.	Post-flowering		.
+TP2_B1_stno_R2_Soil	TP2	B1	stno	R2	Soil	Standard	Fallow	.	Post-flowering		.
+TP2_B1_stno_R3_Rh	TP2	B1	stno	R3	Rhizosphere	Standard	Fallow	.	Post-flowering		.
+TP2_B1_stno_R3_Root	TP2	B1	stno	R3	Root	Standard	Fallow	.	Post-flowering		.
+TP2_B1_stno_R3_Soil	TP2	B1	stno	R3	Soil	Standard	Fallow	.	Post-flowering		.
+TP2_B2_ctcc_R1_Rh	TP2	B2	ctcc	R1	Rhizosphere	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B2_ctcc_R1_Root	TP2	B2	ctcc	R1	Root	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B2_ctcc_R1_Soil	TP2	B2	ctcc	R1	Soil	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B2_ctcc_R2_Rh	TP2	B2	ctcc	R2	Rhizosphere	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B2_ctcc_R2_Root	TP2	B2	ctcc	R2	Root	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B2_ctcc_R2_Soil	TP2	B2	ctcc	R2	Soil	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B2_ctcc_R3_Rh	TP2	B2	ctcc	R3	Rhizosphere	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B2_ctcc_R3_Root	TP2	B2	ctcc	R3	Root	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B2_ctcc_R3_Soil	TP2	B2	ctcc	R3	Soil	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B2_ctno_R1_Rh	TP2	B2	ctno	R1	Rhizosphere	Conservation	Fallow	.	Post-flowering		.
+TP2_B2_ctno_R1_Root	TP2	B2	ctno	R1	Root	Conservation	Fallow	.	Post-flowering		.
+TP2_B2_ctno_R1_Soil	TP2	B2	ctno	R1	Soil	Conservation	Fallow	.	Post-flowering		.
+TP2_B2_ctno_R2_Rh	TP2	B2	ctno	R2	Rhizosphere	Conservation	Fallow	.	Post-flowering		.
+TP2_B2_ctno_R2_Root	TP2	B2	ctno	R2	Root	Conservation	Fallow	.	Post-flowering		.
+TP2_B2_ctno_R2_Soil	TP2	B2	ctno	R2	Soil	Conservation	Fallow	.	Post-flowering		.
+TP2_B2_ctno_R3_Rh	TP2	B2	ctno	R3	Rhizosphere	Conservation	Fallow	.	Post-flowering		.
+TP2_B2_ctno_R3_Root	TP2	B2	ctno	R3	Root	Conservation	Fallow	.	Post-flowering		.
+TP2_B2_ctno_R3_Soil	TP2	B2	ctno	R3	Soil	Conservation	Fallow	.	Post-flowering		.
+TP2_B2_stcc_R1_Rh	TP2	B2	stcc	R1	Rhizosphere	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B2_stcc_R1_Root	TP2	B2	stcc	R1	Root	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B2_stcc_R1_Soil	TP2	B2	stcc	R1	Soil	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B2_stcc_R2_Rh	TP2	B2	stcc	R2	Rhizosphere	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B2_stcc_R2_Root	TP2	B2	stcc	R2	Root	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B2_stcc_R2_Soil	TP2	B2	stcc	R2	Soil	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B2_stcc_R3_Rh	TP2	B2	stcc	R3	Rhizosphere	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B2_stcc_R3_Root	TP2	B2	stcc	R3	Root	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B2_stcc_R3_Soil	TP2	B2	stcc	R3	Soil	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B2_stno_R1_Rh	TP2	B2	stno	R1	Rhizosphere	Standard	Fallow	.	Post-flowering		.
+TP2_B2_stno_R1_Root	TP2	B2	stno	R1	Root	Standard	Fallow	.	Post-flowering		.
+TP2_B2_stno_R1_Soil	TP2	B2	stno	R1	Soil	Standard	Fallow	.	Post-flowering		.
+TP2_B2_stno_R2_Rh	TP2	B2	stno	R2	Rhizosphere	Standard	Fallow	.	Post-flowering		.
+TP2_B2_stno_R2_Root	TP2	B2	stno	R2	Root	Standard	Fallow	.	Post-flowering		.
+TP2_B2_stno_R2_Soil	TP2	B2	stno	R2	Soil	Standard	Fallow	.	Post-flowering		.
+TP2_B2_stno_R3_Rh	TP2	B2	stno	R3	Rhizosphere	Standard	Fallow	.	Post-flowering		.
+TP2_B2_stno_R3_Root	TP2	B2	stno	R3	Root	Standard	Fallow	.	Post-flowering		.
+TP2_B2_stno_R3_Soil	TP2	B2	stno	R3	Soil	Standard	Fallow	.	Post-flowering		.
+TP2_B3_ctcc_R1_Rh	TP2	B3	ctcc	R1	Rhizosphere	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B3_ctcc_R1_Root	TP2	B3	ctcc	R1	Root	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B3_ctcc_R1_Soil	TP2	B3	ctcc	R1	Soil	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B3_ctcc_R2_Rh	TP2	B3	ctcc	R2	Rhizosphere	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B3_ctcc_R2_Root	TP2	B3	ctcc	R2	Root	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B3_ctcc_R2_Soil	TP2	B3	ctcc	R2	Soil	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B3_ctcc_R3_Rh	TP2	B3	ctcc	R3	Rhizosphere	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B3_ctcc_R3_Root	TP2	B3	ctcc	R3	Root	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B3_ctcc_R3_Soil	TP2	B3	ctcc	R3	Soil	Conservation	Cover-Crop	.	Post-flowering		.
+TP2_B3_ctno_R1_Rh	TP2	B3	ctno	R1	Rhizosphere	Conservation	Fallow	.	Post-flowering		.
+TP2_B3_ctno_R1_Root	TP2	B3	ctno	R1	Root	Conservation	Fallow	.	Post-flowering		.
+TP2_B3_ctno_R1_Soil	TP2	B3	ctno	R1	Soil	Conservation	Fallow	.	Post-flowering		.
+TP2_B3_ctno_R2_Rh	TP2	B3	ctno	R2	Rhizosphere	Conservation	Fallow	.	Post-flowering		.
+TP2_B3_ctno_R2_Root	TP2	B3	ctno	R2	Root	Conservation	Fallow	.	Post-flowering		.
+TP2_B3_ctno_R2_Soil	TP2	B3	ctno	R2	Soil	Conservation	Fallow	.	Post-flowering		.
+TP2_B3_ctno_R3_Rh	TP2	B3	ctno	R3	Rhizosphere	Conservation	Fallow	.	Post-flowering		.
+TP2_B3_ctno_R3_Root	TP2	B3	ctno	R3	Root	Conservation	Fallow	.	Post-flowering		.
+TP2_B3_ctno_R3_Soil	TP2	B3	ctno	R3	Soil	Conservation	Fallow	.	Post-flowering		.
+TP2_B3_stcc_R1_Rh	TP2	B3	stcc	R1	Rhizosphere	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B3_stcc_R1_Root	TP2	B3	stcc	R1	Root	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B3_stcc_R1_Soil	TP2	B3	stcc	R1	Soil	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B3_stcc_R2_Rh	TP2	B3	stcc	R2	Rhizosphere	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B3_stcc_R2_Root	TP2	B3	stcc	R2	Root	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B3_stcc_R2_Soil	TP2	B3	stcc	R2	Soil	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B3_stcc_R3_Rh	TP2	B3	stcc	R3	Rhizosphere	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B3_stcc_R3_Root	TP2	B3	stcc	R3	Root	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B3_stcc_R3_Soil	TP2	B3	stcc	R3	Soil	Standard	Cover-Crop	.	Post-flowering		.
+TP2_B3_stno_R1_Rh	TP2	B3	stno	R1	Rhizosphere	Standard	Fallow	.	Post-flowering		.
+TP2_B3_stno_R1_Root	TP2	B3	stno	R1	Root	Standard	Fallow	.	Post-flowering		.
+TP2_B3_stno_R1_Soil	TP2	B3	stno	R1	Soil	Standard	Fallow	.	Post-flowering		.
+TP2_B3_stno_R2_Rh	TP2	B3	stno	R2	Rhizosphere	Standard	Fallow	.	Post-flowering		.
+TP2_B3_stno_R2_Root	TP2	B3	stno	R2	Root	Standard	Fallow	.	Post-flowering		.
+TP2_B3_stno_R2_Soil	TP2	B3	stno	R2	Soil	Standard	Fallow	.	Post-flowering		.
+TP2_B3_stno_R3_Rh	TP2	B3	stno	R3	Rhizosphere	Standard	Fallow	.	Post-flowering		.
+TP2_B3_stno_R3_Root	TP2	B3	stno	R3	Root	Standard	Fallow	.	Post-flowering		.
+TP2_B3_stno_R3_Soil	TP2	B3	stno	R3	Soil	Standard	Fallow	.	Post-flowering		.
+TP3_B1_ctcc_R1_Rh	TP3	B1	ctcc	R1	Rhizosphere	Conservation	Cover-Crop	.	Pre-flowering		.
+TP3_B1_ctcc_R1_Root	TP3	B1	ctcc	R1	Root	Conservation	Cover-Crop	.	Pre-flowering		.
+TP3_B1_ctcc_R1_S	TP3	B1	ctcc	R1	Soil	Conservation	Cover-Crop	.	Pre-flowering		.
+TP3_B1_ctno_R1_Rh	TP3	B1	ctno	R1	Rhizosphere	Conservation	Fallow	.	Pre-flowering		.
+TP3_B1_ctno_R1_Root	TP3	B1	ctno	R1	Root	Conservation	Fallow	.	Pre-flowering		.
+TP3_B1_ctno_R1_S	TP3	B1	ctno	R1	Soil	Conservation	Fallow		Pre-flowering		.
+TP3_B1_stcc_R1_Rh	TP3	B1	stcc	R1	Rhizosphere	Standard	Cover-Crop		Pre-flowering		.
+TP3_B1_stcc_R1_Root	TP3	B1	stcc	R1	Root	Standard	Cover-Crop		Pre-flowering		.
+TP3_B1_stcc_R1_S	TP3	B1	stcc	R1	Soil	Standard	Cover-Crop		Pre-flowering		.
+TP3_B1_stno_R1_Rh	TP3	B1	stno	R1	Rhizosphere	Standard	Fallow		Pre-flowering		.
+TP3_B1_stno_R1_Root	TP3	B1	stno	R1	Root	Standard	Fallow		Pre-flowering		.
+TP3_B1_stno_R1_S	TP3	B1	stno	R1	Soil	Standard	Fallow		Pre-flowering		.
+TP3_B2_ctcc_R1_S	TP3	B2	ctcc	R1	Soil	Conservation	Cover-Crop		Pre-flowering		.
+TP3_B2_ctno_R1_Rh	TP3	B2	ctno	R1	Rhizosphere	Conservation	Fallow		Pre-flowering		.
+TP3_B2_ctno_R1_Root	TP3	B2	ctno	R1	Root	Conservation	Fallow		Pre-flowering		.
+TP3_B2_ctno_R1_S	TP3	B2	ctno	R1	Soil	Conservation	Fallow		Pre-flowering		.
+TP3_B2_stcc_R1_Rh	TP3	B2	stcc	R1	Rhizosphere	Standard	Cover-Crop		Pre-flowering		.
+TP3_B2_stcc_R1_Root	TP3	B2	stcc	R1	Root	Standard	Cover-Crop		Pre-flowering		.
+TP3_B2_stcc_R1_S	TP3	B2	stcc	R1	Soil	Standard	Cover-Crop		Pre-flowering		.
+TP3_B2_stno_R1_Rh	TP3	B2	stno	R1	Rhizosphere	Standard	Fallow		Pre-flowering		.
+TP3_B2_stno_R1_Root	TP3	B2	stno	R1	Root	Standard	Fallow		Pre-flowering		.
+TP3_B2_stno_R1_S	TP3	B2	stno	R1	Soil	Standard	Fallow		Pre-flowering		.
+TP3_B3_ctcc_R1_Rh	TP3	B3	ctcc	R1	Rhizosphere	Conservation	Cover-Crop		Pre-flowering		.
+TP3_B3_ctcc_R1_Root	TP3	B3	ctcc	R1	Root	Conservation	Cover-Crop		Pre-flowering		.
+TP3_B3_ctno_R1_Rh	TP3	B3	ctno	R1	Rhizosphere	Conservation	Fallow		Pre-flowering		.
+TP3_B3_ctno_R1_Root	TP3	B3	ctno	R1	Root	Conservation	Fallow		Pre-flowering		.
+TP3_B3_ctno_R1_S	TP3	B3	ctno	R1	Soil	Conservation	Fallow		Pre-flowering		.
+TP3_B3_stcc_R1_Rh	TP3	B3	stcc	R1	Rhizosphere	Standard	Cover-Crop		Pre-flowering		.
+TP3_B3_stcc_R1_Root	TP3	B3	stcc	R1	Root	Standard	Cover-Crop		Pre-flowering		.
+TP3_B3_stcc_R1_S	TP3	B3	stcc	R1	Soil	Standard	Cover-Crop		Pre-flowering		.
+TP3_B3_stno_R1_Rh	TP3	B3	stno	R1	Rhizosphere	Standard	Fallow		Pre-flowering		.
+TP3_B3_stno_R1_Root	TP3	B3	stno	R1	Root	Standard	Fallow		Pre-flowering		.
+TP3_B3_stno_R1_S	TP3	B3	stno	R1	Soil	Standard	Fallow		Pre-flowering		.
+18_Rhizo_TP3_B2_ctcc_R1_Rh	TP3	B2	ctcc	R1	Rhizosphere	Conservation	Cover-Crop		Pre-flowering		.
+18_Root_TP3_B2_ctcc_R1_Root	TP3	B2	ctcc	R1	Root	Conservation	Cover-Crop		Pre-flowering		.
