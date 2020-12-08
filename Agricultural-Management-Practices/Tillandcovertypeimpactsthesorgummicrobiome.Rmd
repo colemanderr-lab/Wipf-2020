@@ -1,0 +1,3665 @@
+---
+title: "Agricultural Soil Management Practices Differentially Shape the Bacterial and Fungal Microbiome of Sorghum bicolor"
+author: "Edi Wipf"
+date: "07/01/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Scripts for analyzing the impact of agricultural soil management practices on the bacterial and fungal microbiome of sorghum
+## For detailed descriptions of experimental design, results and conclusion, please see the associated publication.
+
+#Intialize working environment
+```{r}
+##Load packages
+library("phyloseq")
+library("ggplot2")
+theme_set(theme_bw())
+library("scales")
+library("grid")
+library("DESeq2")
+library("ape")
+library("vegan")
+library("esquisse")
+library("genefilter")
+library("data.table")
+library("RColorBrewer")
+library("colorRamps")
+library("svglite")
+library("VennDiagram")
+library("plyr")
+library("reshape2")
+library("ggrepel")
+library("tidyr")
+library("dplyr")
+library("janitor")
+library("ggsignif")
+library("edgeR")
+
+##Set working directory
+setwd("/Users/hwipf/")
+```
+
+#Load Phyloseq objects
+##16S data
+```{r}
+###Import biom and map file
+biom_file = "new16S.biom"
+map_file = "16Smetadata.txt"
+otutax = import_biom(biom_file,parseFunction = parse_taxonomy_greengenes)
+sam = import_qiime_sample_data(map_file)
+tree_Q = read.tree("otu.phy")
+tree_Q = root(tree_Q, 1, resolve.root = T)
+###Create phyloseq object
+till_st = merge_phyloseq(otutax, sam, tree_Q)
+###Filtering & rarefaction
+filter = filter_taxa((till_st), function(x) sum(x > 4) > 3, TRUE)
+set.seed(27)
+till_rare16=rarefy_even_depth(filter, sample.size = min(10000),
+                            rngseed = TRUE, replace = TRUE, trimOTUs = TRUE, verbose = TRUE)
+
+###Ordering & subsetting
+sample_data(till_rare16)$Sample_Type<-factor(sample_data(till_rare16)$Sample_Type, levels=c("Soil","Rhizosphere","Root"))
+sample_data(till_rare16)$Treatment<-factor(sample_data(till_rare16)$Treatment, levels=c("ctcc","ctno","stcc","stno"))
+
+Rhizo <- subset_samples(till_rare16, Sample_Type=="Rhizosphere")
+Root <- subset_samples(till_rare16, Sample_Type=="Root")
+Soil <- subset_samples(till_rare16, Sample_Type=="Soil")
+TP1 <- subset_samples(till_rare16, Timepoint=="TP1")
+TP2 <- subset_samples(till_rare16, Timepoint=="TP2")
+TP3 <- subset_samples(till_rare16, Timepoint=="TP3")
+TP1_root <- subset_samples(TP1, Sample_Type=="Root")
+TP1_soil <- subset_samples(TP1, Sample_Type=="Soil")
+TP1_rhizo <- subset_samples(TP1, Sample_Type=="Rhizosphere")
+TP2_root <- subset_samples(TP2, Sample_Type=="Root")
+TP2_soil <- subset_samples(TP2, Sample_Type=="Soil")
+TP2_rhizo <- subset_samples(TP2, Sample_Type=="Rhizosphere")
+TP3_root <- subset_samples(TP3, Sample_Type=="Root")
+TP3_soil <- subset_samples(TP3, Sample_Type=="Soil")
+TP3_rhizo <- subset_samples(TP3, Sample_Type=="Rhizosphere")
+```
+##ITS2 data
+```{r}
+###Import biom and map file
+biom_file = "/Users/hwipf/ITS2_TP123/newITS2.biom"
+map_file = "/Users/hwipf/ITS2_TP123/ITS2metadata.txt"
+otutax = import_biom(biom_file,parseFunction = parse_taxonomy_greengenes)
+sam = import_qiime_sample_data(map_file)
+###Create phyloseq object
+till_f = merge_phyloseq(otutax, sam)
+###Filtering & rarefaction
+filter = filter_taxa((till_f), function(x) sum(x > 4) > 3, TRUE)
+set.seed(16)
+till_rare=rarefy_even_depth(filter, sample.size = min(10000), rngseed = TRUE, replace = TRUE, trimOTUs = TRUE, verbose = TRUE)
+###Ordering & subsetting
+sample_data(till_f)$Sample_Type<-factor(sample_data(till_rare)$Sample_Type,levels=c("Soil","Rhizosphere","Root"))
+sample_data(till_f)$Treatment<-factor(sample_data(till_rare)$Treatment,levels=c("ctcc","ctno","stcc","stno"))
+
+fRhizo <- subset_samples(till_rare, Sample_Type=="Rhizosphere")
+fRoot <- subset_samples(till_rare, Sample_Type=="Root")
+fSoil <- subset_samples(till_rare, Sample_Type=="Soil")
+fTP1 <- subset_samples(till_rare, Timepoint=="1")
+fTP2 <- subset_samples(till_rare, Timepoint=="2")
+fTP3 <- subset_samples(till_rare, Timepoint=="3")
+fTP1_root <- subset_samples(fTP1, Sample_Type=="Root")
+fTP1_soil <- subset_samples(fTP1, Sample_Type=="Soil")
+fTP1_rhizo <- subset_samples(fTP1, Sample_Type=="Rhizosphere")
+fTP2_root <- subset_samples(fTP2, Sample_Type=="Root")
+fTP2_soil <- subset_samples(fTP2, Sample_Type=="Soil")
+fTP2_rhizo <- subset_samples(fTP2, Sample_Type=="Rhizosphere")
+fTP3_root <- subset_samples(fTP3, Sample_Type=="Root")
+fTP3_soil <- subset_samples(fTP3, Sample_Type=="Soil")
+fTP3_rhizo <- subset_samples(fTP3, Sample_Type=="Rhizosphere")
+glo <- subset_taxa(till_rare, Phylum=="Glomeromycota")
+```
+##Meta-transcriptomic data
+```{r}
+###Import bacterial biom and map file
+biom_file = "bMT.biom"
+otutax = import_biom(biom_file,parseFunction = parse_taxonomy_greengenes)
+map_file = "MTmetadata.txt"
+sam = import_qiime_sample_data(map_file)
+###Create phyloseq object
+till_b = merge_phyloseq(otutax, sam)
+###Filtering data
+till_trans= prune_taxa(taxa_sums(till_b)>=1, till_b)
+Bushmanb = filter_taxa(till_trans, function(x) sum(x >= 1) > 2, TRUE)
+###Normalization, calculated with edgeR, calcNormFactors, tmm method, from https://joey711.github.io/phyloseq-extensions/edgeR.html
+x = as(otu_table(Bushmanb), "matrix") + 1L
+taxonomy = data.frame(as(tax_table(Bushmanb), "matrix"))
+x = DGEList(counts=x,genes=taxonomy,remove.zeros = TRUE)
+x = calcNormFactors(x, method="TMM")
+x = estimateCommonDisp(x, verbose=TRUE)
+cts <- as.data.frame(x$pseudo.counts)
+cts$Contig <-rownames(cts)
+txa <- as.data.frame(x$genes)
+txa$Contig <- rownames(txa)
+bb <- as(merge(cts,txa,by="Contig"),"data.frame")
+b<- as.matrix(bb[,1:24])
+bc <- b[,-1]
+rownames(bc) <- b[,1]
+class(bc) <- "numeric"
+otutax <- otu_table(bc, taxa_are_rows=TRUE)
+rownames(bb) <- b[,1]
+bd <- bb[,25:31]
+tax1 <- tax_table(as.matrix(bd))
+bush_b = merge_phyloseq(otutax, sam, tax1)
+bush_b <- subset_samples(bush_b, Sample!="TP3.B2.stcc.R1.S")
+###Ordering & subsetting
+sample_data(bush_b)$Sample_Type<-factor(sample_data(bush_b)$Sample_Type, levels=c("Soil","Rhizosphere"))
+sample_data(bush_b)$Treatment<-factor(sample_data(bush_b)$Treatment, levels=c("ctcc","ctno","stcc","stno"))
+sample_data(bush_b)$Till<-factor(sample_data(bush_b)$Till, levels=c("Conservation","Standard"))
+sample_data(bush_b)$Cover_Crop<-factor(sample_data(bush_b)$Cover_Crop, levels=c("Fallow","Cover-Crop"))
+sample_data(bush_b)$Block<-factor(sample_data(bush_b)$Block, levels=c("B1","B2","B3"))
+
+rhib = subset_samples(bush_b, Sample_Type=="Rhizosphere")
+Soilb = subset_samples(bush_b, Sample_Type=="Soil")
+
+###Import fungal biom and map file
+biom_file = "fMT.biom"
+otutax = import_biom(biom_file,parseFunction = parse_taxonomy_greengenes)
+map_file = "MTmetadata.txt"
+sam = import_qiime_sample_data(map_file)
+###Create phyloseq object
+till_f = merge_phyloseq(otutax, sam)
+###Filtering data
+till_trans= prune_taxa(taxa_sums(till_f)>=1, till_f)
+Bushmanf = filter_taxa(till_trans, function(x) sum(x >= 1) > 2, TRUE)
+###Normalization, calculated with edgeR, calcNormFactors, tmm method, from https://joey711.github.io/phyloseq-extensions/edgeR.html
+x = as(otu_table(Bushmanf), "matrix") + 1L
+taxonomy = data.frame(as(tax_table(Bushmanf), "matrix"))
+x = DGEList(counts=x,genes=taxonomy,remove.zeros = TRUE)
+x = calcNormFactors(x, method="TMM")
+x = estimateCommonDisp(x, verbose=TRUE)
+cts <- as.data.frame(x$pseudo.counts)
+cts$Contig <-rownames(cts)
+txa <- as.data.frame(x$genes)
+txa$Contig <- rownames(txa)
+bb <- as(merge(cts,txa,by="Contig"),"data.frame")
+b<- as.matrix(bb[,1:24])
+bc <- b[,-1]
+rownames(bc) <- b[,1]
+class(bc) <- "numeric"
+otutax <- otu_table(bc, taxa_are_rows=TRUE)
+rownames(bb) <- b[,1]
+bd <- bb[,25:31]
+tax1 <- tax_table(as.matrix(bd))
+bush_f = merge_phyloseq(otutax, tax1, sam)
+bush_f <- subset_samples(bush_f, Sample!="TP3.B2.stcc.R1.S")
+###Ordering & subsetting
+sample_data(bush_f)$Sample_Type<-factor(sample_data(bush_f)$Sample_Type, levels=c("Soil","Rhizosphere"))
+sample_data(bush_f)$Treatment<-factor(sample_data(bush_f)$Treatment, levels=c("ctcc","ctno","stcc","stno"))
+sample_data(bush_f)$Till<-factor(sample_data(bush_f)$Till, levels=c("Conservation","Standard"))
+sample_data(bush_f)$Cover_Crop<-factor(sample_data(bush_f)$Cover_Crop, levels=c("Fallow","Cover-Crop"))
+sample_data(bush_f)$Block<-factor(sample_data(bush_f)$Block, levels=c("B1","B2","B3"))
+
+rhif = subset_samples(bush_f, Sample_Type=="Rhizosphere")
+Soilf = subset_samples(bush_f, Sample_Type=="Soil")
+
+###Import IMG annotations
+data_scratch<-read.table("estc_tmpfile.txt",header=F,sep="\t")
+####Add column headers
+colnames(data_scratch) <- c("Contig","01_TP3.B3.ctno.R1.Rh","02_TP3.B3.stno.R1.Rh","03_TP3.B2.stcc.R1.Rh","04_TP3.B2.ctcc.R1.Rh","05_TP3.B2.ctno.R1.Rh","06_TP3.B2.stno.R1.Rh","07_TP3.B2.ctno.R1.S","08_TP3.B1.ctno.R1.Rh","09_TP3.B3.ctcc.R1.Rh","10_TP3.B2.stno.R1.S","11_TP3.B1.ctno.R1.S","12_TP3.B3.stcc.R1.S","13_TP3.B2.stcc.R1.S","14_TP3.B1.stcc.R1.Rh","15_TP3.B1.ctcc.R1.Rh","17_TP3.B3.ctno.R1.S","18_TP3.B3.ctcc.R1.S","19_TP3.B2.stcc.R1.S","20_TP3.B1.stno.R1.S","21_TP3.B1.stno.R1.Rh","22_TP3.B1.ctcc.R1.S","23_TP3.B3.stno.R1.S","24_TP3.B3.stcc.R1.Rh","COG","Symbol")
+####Remove rows with empty values in Symbol column
+clean<-subset(data_scratch,data_scratch$Symbol!="")
+clean$Symbol <- as.character(clean$Symbol)
+split <- clean %>% tidyr::separate(Symbol, 
+                   sep = seq_len(max(nchar(.$Symbol)) - 1),
+                   into = paste0('Sy', seq_len(max(nchar(.$Symbol)))))
+####Sum values for each symbol (A - Z) for each sample
+#####Creates 2 new columns that condense 5 columns of Sy1-Sy5 with symbols 
+agg <- split %>% gather(key, value = Symbol, Sy1:Sy5)
+#####Put each sample (23 here) into a row
+agg1 <- agg %>% gather(Sample_ID, value=Count,`01_TP3.B3.ctno.R1.Rh`:`24_TP3.B3.stcc.R1.Rh`)
+#####Then you can group, create a column with the pasted strings such as K2,K3, and add up the numeric values.
+data_a <- agg1 %>% group_by(Symbol) %>%
+  mutate(COG_all = sort(COG) %>% unique() %>% paste(collapse=",")) %>%
+  group_by(Symbol, Sample_ID, COG_all) %>%
+  summarise(sum = sum(Count,na.rm=T)) %>%
+  spread(key = Sample_ID, value=sum)
+#####Add in annotations;
+cog_ano<-read.table("cogcount.txt",header=T,sep="\t")
+data_ano1 <- merge(data_a, cog_ano, by.x="Symbol", by.y="Symbol")[,c(1:25,27)]
+#####Sum totals to then calculate relative abundances of each annotation for each sample
+dat <- data_ano1 %>% adorn_totals("row")
+relabun <- data.frame(lapply(dat[3:25], function(X) X/X[25])) 
+rel_abun <- cbind.data.frame(dat[c(1,26)],relabun) 
+write.table(rel_abun, "relative_abundance.txt",sep="\t",row.names=FALSE)
+#####Aggregating together all counts for each COG Category/Symbol/Annotation
+data_agg <- agg1 %>% group_by(Symbol) %>%
+  mutate(COG_all = sort(COG) %>% unique() %>% paste(collapse=",")) %>%
+  group_by(Symbol, Sample_ID, COG_all) %>%
+  summarise(sum = sum(Count,na.rm=T))# %>%
+  #spread(key = Sample_ID, value=sum)
+head(data_agg)
+#####Create metadata file
+md <- data.frame("Sample_ID"=unique(data_agg$Sample_ID),
+                 "SampleType"=c(rep("Rhizosphere",6),"Soil",rep("Rhizosphere",2),rep("Soil",4),rep("Rhizosphere",2),
+                                rep("Soil",4),"Rhizosphere",rep("Soil",2),"Rhizosphere"),
+                 "Till"=c("Conservation",rep("Standard",2),rep("Conservation",2),"Standard",rep("Conservation",3),
+                          "Standard","Conservation",rep("Standard",3),rep("Conservation",3),rep("Standard",3),
+                          "Conservation",rep("Standard",2)),
+                 "CoverCrop"=c(rep("Fallow",2),rep("Cover_Crop",2),rep("Fallow",4),"Cover_Crop",rep("Fallow",2),
+                               rep("Cover_Crop",4),"Fallow",rep("Cover_Crop",2),rep("Fallow",2),"Cover_Crop",
+                               "Fallow","Cover_Crop"),
+                 "Treatment"=c("ctno","stno","stcc","ctcc","ctno","stno","ctno","ctno","ctcc","stno",
+                              "ctno","stcc","stcc","stcc","ctcc","ctno","ctcc","stcc","stno","stno",
+                              "ctcc","stno","stcc"),
+                 "Block"=c(rep("B3",2),rep("B2",5),"B1","B3","B2","B1","B3","B2",rep("B1",2),rep("B3",2),"B2",rep("B1",3),"B3","B3"))
+heat <- merge.data.frame(md,data_agg,by="Sample_ID")
+data_ano <- merge(heat, cog_ano, by.x="Symbol", by.y="Symbol")[,c(1:7,9,11)]
+```
+
+```{r}
+##Figure 1.
+###a. Shannon Diversity, Rhizosphere
+p <- plot_richness(TP1_rhizo,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+p
+ggsave("Shannon_16S_TP1_rhizo.jpg",width=4,height=4)
+p <- plot_richness(fTP1_rhizo,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_fTP1_rhizo.jpg",width=4,height=4)
+###b. Beta Diversity, Rhizosphere
+orduniw = ordinate(TP1_rhizo, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(TP1_rhizo, orduniw, color="Treatment")+
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank())
+ggsave("CAP_TP1_rhizo.jpg",p,width=4,height =4)
+orduniw = ordinate(fTP1_rhizo, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(fTP1_rhizo, orduniw, color="Treatment")+
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_fTP1_rhizo.jpg",p,width=4,height =4)
+###c. Composition, Rhizosphere
+glom <- phyloseq::tax_glom(till_rare16, taxrank = "Class")
+dat <- phyloseq::psmelt(glom)
+dat_1 <- subset(dat, dat$Timepoint=="TP1")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Rhizosphere")
+unique(dat_1s$Class)
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Betaproteobacteria","Sva0725","Deltaproteobacteria","Bacilli","Gammaproteobacteria","Alphaproteobacteria","Sphingobacteria","Actinobacteria"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Bacilli"="#4d5b6a"
+    ,"Betaproteobacteria"="#7997a1"
+    ,"Gammaproteobacteria"="#427e83"
+    ,"Alphaproteobacteria"="#919f70"
+    ,"Sva0725"="#cb9e59"
+    ,"Sphingobacteria"="#ecc363"
+    ,"Deltaproteobacteria"="#d65f3d"
+    ,"Actinobacteria"="#a04344"
+    ,"Other"="#e5e0db"
+  ))+ 
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("16S_RelaAbunClass_TP1rh.jpg",newgraph,width=4,height =8)
+glom <- tax_glom(till_rare, taxrank = "Class")
+dat <- psmelt(glom)
+dat$Class <- as.character(dat$Class)
+dat$Class[dat$Abundance < 320] <- "Other"
+dat$Class[dat$Class=="unclassified"] <- "Other"
+reorder(dat$Class, dat$Abundance)
+dat_1 <- subset(dat, dat$Timepoint=="1")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Rhizosphere")
+dat_1s<-dat_1s[complete.cases(dat_1s),]
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Orbiliomycetes","Arthoniomycetes","Tremellomycetes","Leotiomycetes","Agaricomycetes","Pezizomycetes","Eurotiomycetes","Dothideomycetes","Sordariomycetes"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill")+
+  scale_fill_manual(values = c(
+    "Sordariomycetes"="#4d5b6a" #Stiffkey Blue
+    ,"Arthoniomycetes"="#599ec4" #ST Giles Blue
+    ,"Cystobasidiomycetes"="#7997a1" #Stone Blue 
+    ,"Pezizomycetes"="#427e83" #Vardo
+    ,"Agaricomycetes"="#919f70" #Yeabridge Green
+    ,"Leotiomycetes"="#686a47" #Bancha
+    ,"Eurotiomycetes"="#ecc363" #Babouche
+    ,"Orbiliomycetes"="#d65f3d" #Charlotte's Locks
+    ,"Dothideomycetes"="#a04344" #Incarnadine 
+    ,"Tremellomycetes"="#8d8089" #Brassica
+    ,"Other"="#e5e0db" #Strong White
+  ))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("ITS2_RelaAbunClass_TP1rh.jpg",newgraph,width=4,height =8)
+###d. Shannon Diversity, Root
+p <- plot_richness(TP1_root,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_16S_TP1_root.jpg",width=4,height=4)
+p <- plot_richness(fTP1_root,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_fTP1_root.jpg",width=4,height=4)
+###e. Beta Diversity, Root
+orduniw = ordinate(TP1_root, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(TP1_root, orduniw, color="Treatment") +
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff")) +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_TP1_root.jpg",p,width=4,height =4)
+orduniw = ordinate(fTP1_root, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(fTP1_root, orduniw, color="Treatment")+
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_fTP1_root.jpg",p,width=4,height =4)
+###f. Composition, Root
+glom <- phyloseq::tax_glom(till_rare16, taxrank = "Class")
+dat <- phyloseq::psmelt(glom)
+dat_1 <- subset(dat, dat$Timepoint=="TP1")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Root")
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Betaproteobacteria","Sva0725","Deltaproteobacteria","Bacilli","Gammaproteobacteria","Alphaproteobacteria","Sphingobacteria","Actinobacteria"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Bacilli"="#4d5b6a"
+    ,"Betaproteobacteria"="#7997a1" 
+    ,"Gammaproteobacteria"="#427e83"
+    ,"Alphaproteobacteria"="#919f70"
+    ,"Sva0725"="#cb9e59"
+    ,"Sphingobacteria"="#ecc363"
+    ,"Deltaproteobacteria"="#d65f3d"
+    ,"Actinobacteria"="#a04344"
+    ,"Other"="#e5e0db"
+  )) +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("16S_RelaAbunClass_TP1root.jpg",newgraph,width=4,height =8)
+glom <- tax_glom(till_rare, taxrank = "Class")
+dat <- psmelt(glom)
+dat$Class <- as.character(dat$Class)
+dat$Class[dat$Abundance < 320] <- "Other"
+dat$Class[dat$Class=="unclassified"] <- "Other"
+reorder(dat$Class, dat$Abundance)
+dat_1 <- subset(dat, dat$Timepoint=="1")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Root")
+dat_1s<-dat_1s[complete.cases(dat_1s),]
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Orbiliomycetes","Arthoniomycetes","Tremellomycetes","Leotiomycetes","Pezizomycetes","Agaricomycetes","Dothideomycetes","Eurotiomycetes","Sordariomycetes"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Sordariomycetes"="#4d5b6a"
+    ,"Arthoniomycetes"="#599ec4"
+    ,"Cystobasidiomycetes"="#7997a1" 
+    ,"Pezizomycetes"="#427e83"
+    ,"Agaricomycetes"="#919f70"
+    ,"Leotiomycetes"="#686a47"
+    ,"Eurotiomycetes"="#ecc363"
+    ,"Orbiliomycetes"="#d65f3d"
+    ,"Dothideomycetes"="#a04344"
+    ,"Tremellomycetes"="#8d8089"
+    ,"Other"="#e5e0db"
+  )) +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("ITS2_RelaAbunClass_TP1root.jpg",newgraph,width=4,height =8)
+```
+
+```{r}
+##Figure 2.
+get_indicators <- function(physeq, groupfactor){
+  all.data <- psmelt(physeq)
+  all.data <- subset(all.data, Abundance > 0)
+  metadata <- sample_data(physeq)
+  spec <- subset(all.data, select = c("Sample", "OTU", "Abundance"))
+  spec <- reshape2::dcast(spec, Sample ~ OTU, value.var =  "Abundance")
+  spec <- dplyr::mutate_at(spec, c(2:ncol(spec)), ~replace(., is.na(.), 0))
+  rownames(spec) <- spec$Sample
+  spec <- subset(spec, select = -c(Sample))
+  spec <- spec[order(rownames(spec)),]
+  clust <- as.data.frame(metadata[[groupfactor]])
+  colnames(clust) <- "group"
+  clust$group.level <- as.integer(clust$group)
+  rownames(clust) <- metadata$Sample_ID
+  clust <- subset(clust, rownames(clust) %in% rownames(spec))
+  clust <- clust[order(rownames(clust)),]
+  if (!(identical(rownames(spec), rownames(clust)))) {
+    stop("Species and clustering dataframes are misaligned! Check sample orders.")
+  }
+  indvals <- indval(spec, clust$group.level, numitr = 1000)
+  summary(indvals)
+  #convert all.indvals to a single df for ease of access
+  pval <- as.data.frame(indvals$pval)
+  pval$OTU <- rownames(pval)
+  maxcls <- as.data.frame(indvals$maxcls)
+  maxcls$OTU <- rownames(maxcls)
+  indcls <- as.data.frame(indvals$indcls)
+  indcls$OTU <- rownames(indcls)
+  all.indvals <- merge(pval, maxcls, by = "OTU")
+  all.indvals <- merge(all.indvals, indcls, by = "OTU")
+  colnames(all.indvals) <- c("OTU", "pval", "group.level", "indcls")
+  all.indvals <- merge(all.indvals, clust, by = "group.level")
+  all.indvals <- subset(all.indvals, select = c(OTU, group, pval, indcls))
+  all.indvals <- unique(all.indvals)
+  #get only significant indicators (p<=0.05) with an indcls >=0.5
+  sig.indvals <- subset(all.indvals, pval <= 0.001) #0.05
+  sig.indvals <- subset(sig.indvals, indcls >= 0.5)
+  #return an object with both the subsetted significant indvals and all indvals
+  indvals <- list("all.indvals" = all.indvals, "sig.indvals" = sig.indvals, "all.data" = indvals)
+} 
+hRb <- till_rare16
+w=get_indicators(hRb,"Treatment")
+sample_data(hRb)$Treatment
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hRb)[w$sig.indvals$OTU, ], "matrix"))
+c_tax <- sigtab
+write.table(c_tax,"16S_TreatmentIndicators.csv",sep=",")
+hRb <- till_rare
+w=get_indicators(hRb,"Treatment")
+sample_data(hRb)$Treatment
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hRb)[w$sig.indvals$OTU, ], "matrix"))
+c_tax <- sigtab
+write.table(c_tax,"ITS2_TreatmentIndicators.csv",sep=",")
+###a.
+phy_in <- read.csv("16S_TreatmentIndicators.csv")
+c_phy_in <- subset(phy_in, Label%in%c("ctcc","ctno","stcc","stno"))
+c_phy_in$count="1"
+c_phy_in$count <- as.numeric(c_phy_in$count)
+c_phy_in[c_phy_in$Phylum=="Candidatus",]
+unique(c_phy_in$Phylum)
+c_phy_in$Phylum<-factor(c_phy_in$Phylum,levels=c("Proteobacteria","Actinobacteria","Bacteroidetes","Firmicutes","Chloroflexi","Cyanobacteria","Planctomycetes", "Acidobacteria","Nitrospirae","Verrucomicrobia","Deinococcus-Thermus","Gemmatimonadetes","Poribacteria","Armatimonadetes","Aquificae","Spirochaetes","Nitrospinae","Candidatus"))
+c_phy_in %>% 
+  group_by(Phylum) %>%
+  summarise(no_rows = length(Phylum))
+abunplot <- ggplot(data=c_phy_in, aes(x=Phylum, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))+
+  coord_flip()+
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.25,0.50,0.75,1))
+ggsave("16S_TreatmentIndicators_Phylum.jpg",newgraph,width=7,height =5)
+###b.
+phy_in <- read.csv("ITS2_TreatmentIndicators.csv")
+c_phy_in <- subset(phy_in, Label%in%c("ctcc","ctno","stcc","stno"))
+c_phy_in$count <- as.numeric(c_phy_in$count)
+c_phy_in$Phylum<-factor(c_phy_in$Phylum,levels=c("Blastocladiomycota","Chytridiomycota","Zoopagomycota","Mucoromycota","Basidiomycota","Ascomycota"))
+c_phy_in %>% 
+  group_by(Phylum) %>%
+  summarise(no_rows = length(Phylum))
+abunplot <- ggplot(data=c_phy_in, aes(x=Phylum, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  coord_flip()+
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.25,0.50,0.75,1))
+newgraph
+ggsave("ITS2_TreatmentIndicators_Phylum.jpg",newgraph,width=7,height =5)
+```
+
+```{r}
+##Figure 3.
+###a. Composition
+dat<- tax_b
+dat$Class <- as.character(dat$Class)
+unique(reorder(dat$Class,dat$Abundance))
+genus_abun <- dat %>%
+  group_by(Class) %>%
+  summarize(Abundance = sum(Abundance)) %>%
+  arrange(Abundance)
+minus<-as.data.frame(genus_abun$Class[genus_abun$Abundance < 92000])
+colnames(minus)<-"other"
+dat$Class[which(dat$Class%in%minus$other)]="Other"
+dat$Class<-factor(dat$Class,levels=c("Other","Bacilli","Cytophagia","Deltaproteobacteria","Betaproteobacteria","Clostridia","Rubrobacteria","Gammaproteobacteria","Actinobacteria","Alphaproteobacteria"))
+dat_1 <- subset(dat, dat$Sample_Type=="Rhizosphere")
+dat_1$Class<-factor(dat_1$Class,levels=c("Other","Bacilli","Cytophagia","Deltaproteobacteria","Betaproteobacteria","Gammaproteobacteria","Rubrobacteria","Clostridia","Actinobacteria","Alphaproteobacteria"))
+abunplot <- ggplot(data=dat_1, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") + 
+  scale_fill_manual(values = c(
+    "Bacilli"="#4d5b6a" #Stiffkey Blue
+    ,"Betaproteobacteria"="#7997a1" #Stone Blue 
+    ,"Gammaproteobacteria"="#427e83" #Vardo
+    ,"Alphaproteobacteria"="#919f70" #Yeabridge Green
+    ,"Clostridia"="#cb9e59" #India Yellow
+    ,"Cytophagia"="#ecc363" #Babouche
+    ,"Deltaproteobacteria"="#d65f3d" #Charlotte's Locks
+    ,"Actinobacteria"="#a04344" #Incarnadine
+    ,"Rubrobacteria"="#bf7a8f" #Rangwali
+    ,"Other"="#e5e0db" #Strong White
+  ))+
+  coord_flip()+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+newgraph
+ggsave("Bacteria_RelaAbunClass_rhizosphere.jpg",newgraph,width=4,height =8)
+dat<- tax_f
+dat$Class <- as.character(dat$Class)
+unique(reorder(dat$Class,dat$Abundance))
+genus_abun <- dat %>%
+  group_by(Class) %>%
+  summarize(Abundance = sum(Abundance)) %>%
+  arrange(Abundance)
+minus<-as.data.frame(genus_abun$Class[genus_abun$Abundance < 35000])
+colnames(minus)<-"other"
+dat$Class[which(dat$Class%in%minus$other)]="Other"
+dat$Class<-factor(dat$Class,levels=c("Other","Basidiobolomycetes","Eurotiomycetes","Schizosaccharomycetes","Pezizomycetes","Saccharomycetes","Agaricomycetes","Dothideomycetes","unclassified_Mucoromycota","Sordariomycetes"))
+dat_1 <- subset(dat, dat$Sample_Type=="Rhizosphere")
+dat_1$Class<-factor(dat_1$Class,levels=c("Other","Basidiobolomycetes","Eurotiomycetes","Saccharomycetes","Pezizomycetes","Schizosaccharomycetes","Agaricomycetes","Dothideomycetes","unclassified_Mucoromycota","Sordariomycetes"))
+abunplot <- ggplot(data=dat_1, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill")+ 
+  scale_fill_manual(values = c(
+    "Sordariomycetes"="#4d5b6a" #Stiffkey Blue
+    ,"Arthoniomycetes"="#599ec4" #St. Giles Blue
+    ,"Basidiobolomycetes"="#7997a1" #Stone Blue 
+    ,"Pezizomycetes"="#427e83" #Vardo
+    ,"Agaricomycetes"="#919f70" #Yeabridge Green
+    ,"Schizosaccharomycetes"="#686a47" #Bancha
+    ,"Eurotiomycetes"="#ecc363" #Babouche
+    ,"Saccharomycetes"="#d65f3d" #Charlotte's Locks
+    ,"Dothideomycetes"="#a04344" #Incarnadine
+    ,"unclassified_Mucoromycota"="#8d8089" #Brassica
+    ,"Other"="#e5e0db" #Strong White
+  ))+
+  coord_flip()+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+newgraph
+ggsave("Fungi_RelaAbunClass_rhizosphere.jpg",newgraph,width=4,height =8)
+###b. COG Activity
+dat <- tax_b
+dat$Annotation <- as.character(dat$Annotation)
+genus_abun <- dat %>%
+  group_by(Annotation) %>%
+  summarize(Abundance = sum(Abundance)) %>%
+  arrange(Abundance)
+unique(reorder(dat$Annotation,dat$Abundance))
+dat$Annotation<-factor(dat$Annotation,levels=c("Other",
+                                               "Coenzyme transport and metabolism",
+                                               "Carbohydrate transport and metabolism",
+                                               "Transcription",
+                                               "Amino acid transport and metabolism",
+                                               "Posttranslational modification, protein turnover, chaperones",
+                                               "General function prediction only",
+                                               "Energy production and conversion",
+                                               "Translation, ribosomal structure and biogenesis",
+                                               "Signal transduction mechanisms",
+                                               "Inorganic ion transport and metabolism"))
+datRh<-subset(dat, dat$Sample_Type=="Rhizosphere")
+ggplot(datRh, aes(x=Treatment, y=Abundance, fill=Annotation)) +
+  geom_bar(stat = "identity",position = "fill",color = "NA") +
+  scale_fill_manual(values = c(
+    "Inorganic ion transport and metabolism"="#4d5b6a" #Stiffkey Blue
+    ,"Coenzyme transport and metabolism"="#6a90b4" #Cook's Blue
+    ,"Cell wall/membrane/envelope biogenesis" ="#599ec4" #St. Giles Blue
+    ,"Transcription"="#8d8089"#Brassica
+    ,"Posttranslational modification, protein turnover, chaperones"="#427e83" #Vardo
+    ,"Cell motility"="#686a47" #Bancha
+    ,"Translation, ribosomal structure and biogenesis"="#cb9e59" #India Yellow
+    ,"Signal transduction mechanisms"="#ecc363" #Babouche
+    ,"Energy production and conversion"="#a04344" #Incarnadine
+    ,"Amino acid transport and metabolism"="#bf7a8f" #Rangwali
+    ,"General function prediction only"="#919f70" #Yeabridge Green
+    ,"Other"="#e5e0db" #Strong White
+    ,"Carbohydrate transport and metabolism"="#d65f3d" #Charlotte's Locks
+  ))+
+  coord_flip()+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("Relative_Abun_category_bacteria_Rh.jpg",width=4,height =8)
+dat <- tax_f
+dat$Annotation <- as.character(dat$Annotation)
+unique(dat$Annotation)
+genus_abunf <- dat %>%
+  group_by(Annotation) %>%
+  summarize(Abundance = sum(Abundance)) %>%
+  arrange(Abundance)
+genus_abunf
+unique(genus_abunf$Annotation)
+unique(genus_abunf$Annotation[genus_abunf$Abundance < 62000])
+unique(reorder(dat$Annotation,dat$Abundance))
+dat$Annotation<-factor(dat$Annotation,levels=c("Other",
+                                               "Coenzyme transport and metabolism",
+                                               "Carbohydrate transport and metabolism",
+                                               "Transcription",
+                                               "Amino acid transport and metabolism",
+                                               "Posttranslational modification, protein turnover, chaperones",
+                                               "General function prediction only",
+                                               "Energy production and conversion",
+                                               "Translation, ribosomal structure and biogenesis",
+                                               "Signal transduction mechanisms",
+                                               "Inorganic ion transport and metabolism"))
+datRh<-subset(dat, dat$Sample_Type=="Rhizosphere")
+ggplot(datRh, aes(x=Treatment, y=Abundance, fill=Annotation)) +
+  geom_bar(stat = "identity",position = "fill",color = "NA") + #for relative abundance
+  scale_fill_manual(values = c(
+    "Inorganic ion transport and metabolism"="#4d5b6a" #Stiffkey Blue
+    ,"Coenzyme transport and metabolism"="#6a90b4" #Cook's Blue
+    ,"Cell wall/membrane/envelope biogenesis" ="#599ec4" #ST Giles Blue
+    ,"Transcription"="#8d8089"#Brassica ;"#7997a1" #Stone Blue
+    ,"Posttranslational modification, protein turnover, chaperones"="#427e83" #Vardo
+    ,"Cell motility"="#686a47" #Bancha
+    ,"Translation, ribosomal structure and biogenesis"="#cb9e59" #India Yellow
+    ,"Signal transduction mechanisms"="#ecc363" #Babouche
+    ,"Energy production and conversion"="#a04344" #Incarnadine
+    ,"Amino acid transport and metabolism"="#bf7a8f" #Rangwali
+    ,"General function prediction only"="#919f70" #Yeabridge Green
+    ,"Other"="#e5e0db" #Strong White
+    ,"Carbohydrate transport and metabolism"="#d65f3d" #Charlotte's Locks
+  ))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("Relative_Abun_category_fungi_Rh.jpg",width=4,height =8)
+```
+
+```{r}
+##Figure 4.
+#### The following converts to a DESeq2 format 
+diagdds = phyloseq_to_deseq2(rhib, ~ Till)
+# This helps to obtain the normalization factor for your dataset.
+diagdds = estimateSizeFactors(diagdds)
+# You also need to demonstrate that your dataset is effectively dispersed.
+diagdds = estimateDispersions(diagdds)
+# This will reduce sampling variance.
+diagvst = getVarianceStabilizedData(diagdds)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, contrast=c("Till","Conservation","Standard"), cooksCutoff = FALSE)
+sort_res <- res[order(res$padj),]
+resSig <- subset(sort_res, padj < 0.1)
+head(resSig)
+write.csv(as.data.frame(resSig), 
+          file="DET_TillRh_DeSeq_Bacteria.csv")
+summary(res)
+capture.output(summary(res), file = "DeSeq_Till_Bacteria.txt")
+jpeg("MAplot_TillRh_b.jpeg")
+plotMA(res,ylim=c(-6,15),main="Log2 Fold Changes for Bacterial Transcripts in CT vs. ST in Rhizospheres")
+dev.off()
+alpha = 0.05
+sigtab = res[which(res$padj < alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(rhib)[rownames(sigtab), ], "matrix"))
+sigtab[sigtab==""] <- NA
+sigtab$taxa <- paste(sigtab$Phylum, sigtab$Genus, sep = "_")
+sigtab_mean <- tapply(sigtab$log2FoldChange, sigtab$taxa, mean)
+uniq <- sigtab[!duplicated(sigtab$taxa),]
+uniq$Phylum <- as.character(uniq$Phylum)
+uniq$Genus <- as.character(uniq$Genus)
+uniq_ordered <- uniq[order(uniq$log2FoldChange),]
+uniq_ordered$name <- paste(rownames(uniq),uniq$log2FoldChange,uniq$taxa,sep="_")
+# Get tables for only the enriched or depleted taxa.
+TillRh_b_depleted <- uniq[uniq$log2FoldChange < 0.00,]
+TillRh_b_enriched <- uniq[uniq$log2FoldChange > 0.00,]
+diagdds = phyloseq_to_deseq2(rhif, ~ Till)
+diagdds = estimateSizeFactors(diagdds)
+diagdds = estimateDispersions(diagdds)
+diagvst = getVarianceStabilizedData(diagdds)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, contrast=c("Till","Conservation","Standard"), cooksCutoff = FALSE)
+sort_res <- res[order(res$padj),]
+resSig <- subset(sort_res, padj < 0.1)
+write.csv(as.data.frame(resSig), 
+          file="DET_TillRh_DeSeq_Fungi.csv")
+capture.output(summary(res), file = "DeSeq_Till_Fungi.txt")
+jpeg("MAplot_TillRh_f.jpeg")
+plotMA(res,ylim=c(-10,8),main="Log2 Fold Changes for Fungal Transcripts in CT vs. ST in Rhizospheres")
+dev.off()
+alpha = 0.05
+sigtab = res[which(res$padj < alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(rhif)[rownames(sigtab),], "matrix"))
+sigtab[sigtab==""] <- NA
+sigtab$taxa <- paste(sigtab$Phylum, sigtab$Genus, sep = "_")
+sigtab_mean <- tapply(sigtab$log2FoldChange, sigtab$taxa, mean)
+uniq <- sigtab[!duplicated(sigtab$taxa),]
+uniq$Phylum <- as.character(uniq$Phylum)
+uniq$Genus <- as.character(uniq$Genus)
+uniq_ordered <- uniq[order(uniq$log2FoldChange),]
+uniq_ordered$name <- paste(rownames(uniq),uniq$log2FoldChange,uniq$taxa,sep="_")
+# Get tables for only the enriched or depleted taxa.
+TillRh_f_depleted <- uniq[uniq$log2FoldChange < 0.00,]
+TillRh_f_enriched <- uniq[uniq$log2FoldChange > 0.00,]
+diagdds = phyloseq_to_deseq2(rhib, ~ Cover_Crop)
+diagdds = estimateSizeFactors(diagdds)
+diagdds = estimateDispersions(diagdds)
+diagvst = getVarianceStabilizedData(diagdds)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, contrast=c("Cover_Crop","Cover-Crop","Fallow"),cooksCutoff = FALSE)
+sort_res <- res[order(res$padj),]
+resSig <- subset(sort_res, padj < 0.1)
+head(resSig)
+write.csv(as.data.frame(resSig), 
+          file="DET_CoverCrop_DeSeq_Bacteria.csv")
+capture.output(summary(res), file = "DeSeq_CoverCrop_Bacteria.txt")
+jpeg("MAplot_CoverCrop_b.jpeg")
+plotMA(res,ylim=c(-6,15),main="Log2 Fold Changes for Bacterial Transcripts in CC vs. NO in Rhizospheres")
+dev.off()
+alpha = 0.05
+sigtab = res[which(res$padj < alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(rhib)[rownames(sigtab), ], "matrix"))
+sigtab[sigtab==""] <- NA
+sigtab$taxa <- paste(sigtab$Phylum, sigtab$Genus, sep = "_")
+sigtab_mean <- tapply(sigtab$log2FoldChange, sigtab$taxa, mean)
+uniq <- sigtab[!duplicated(sigtab$taxa),]
+uniq$Phylum <- as.character(uniq$Phylum)
+uniq$Genus <- as.character(uniq$Genus)
+uniq_ordered <- uniq[order(uniq$log2FoldChange),]
+uniq_ordered$name <- paste(rownames(uniq),uniq$log2FoldChange,uniq$taxa,sep="_")
+# Get tables for only the enriched or depleted taxa.
+CCRh_b_depleted <- uniq[uniq$log2FoldChange < 0.00,]
+CCRh_b_enriched <- uniq[uniq$log2FoldChange > 0.00,]
+
+diagdds = phyloseq_to_deseq2(rhif, ~ Cover_Crop)
+diagdds = estimateSizeFactors(diagdds)
+diagdds = estimateDispersions(diagdds)
+diagvst = getVarianceStabilizedData(diagdds)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, contrast=c("Cover_Crop","Cover-Crop","Fallow"), cooksCutoff = FALSE)
+sort_res <- res[order(res$padj),]
+resSig <- subset(sort_res, padj < 0.1)
+write.csv(as.data.frame(resSig), 
+          file="DET_CoverCrop_DeSeq_Fungi.csv")
+capture.output(summary(res), file = "DeSeq_CoverCrop_Fungi.txt")
+jpeg("MAplot_CoverCrop_f.jpeg")
+plotMA(res,ylim=c(-10,8),main="Log2 Fold Changes for Fungal Transcripts in CC vs. NO in Rhizospheres")
+dev.off()
+alpha = 0.05
+sigtab = res[which(res$padj < alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(rhif)[rownames(sigtab), ], "matrix"))
+sigtab[sigtab==""] <- NA
+sigtab$taxa <- paste(sigtab$Phylum, sigtab$Genus, sep = "_")
+sigtab_mean <- tapply(sigtab$log2FoldChange, sigtab$taxa, mean)
+uniq <- sigtab[!duplicated(sigtab$taxa),]
+uniq$Phylum <- as.character(uniq$Phylum)
+uniq$Genus <- as.character(uniq$Genus)
+uniq_ordered <- uniq[order(uniq$log2FoldChange),]
+uniq_ordered$name <- paste(rownames(uniq),uniq$log2FoldChange,uniq$taxa,sep="_")
+# Get tables for only the enriched or depleted taxa.
+CCRh_f_depleted <- uniq[uniq$log2FoldChange < 0.00,]
+CCRh_f_enriched <- uniq[uniq$log2FoldChange > 0.00,]
+
+data<-read.table("DET_CoverCrop_DeSeq_Bacteria.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/805) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/1610)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:13) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[14]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_CC_bacteria.txt",sep="\t",append=TRUE)}
+}
+for(i in 1:13) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[14]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_CC_bacteria.txt",sep="\t",append=TRUE)}
+}
+UP <- read.table(file="phyper_Enrichment_CC_bacteria.txt",sep="\t")
+f <-merge(fin2,UP,by.x="Annotation",by.y="V2")
+DOWN <- read.table(file="phyper_Depletion_CC_bacteria.txt",sep="\t")
+n <-merge(fin2,DOWN,by.x="Annotation",by.y="V2")
+ggplot(fin2, aes(x=reorder(Annotation,FoldEnrichment), y=FoldEnrichment)) +
+  theme_bw()+
+  geom_point(pch=21, size=4,fill="blue") +
+  ylab("Fold Enrichment")+
+  xlab("COG Annotation")+
+  theme(axis.text.x=element_text(size=12,color="black",face="bold",angle=90), 
+        axis.text.y=element_text(size=12,color="black",face="bold"), 
+        axis.title=element_text(size=12,face="bold"),text=element_text(size=11))+
+  theme(legend.text = element_text(colour="black", size = 12, face = "bold"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black")) +
+  geom_hline(aes(yintercept=1),colour="Black",size=2,linetype="dashed")+
+  theme(strip.text = element_text(size=11,face="bold"))+
+  ggtitle("Fold Enrichment for Cover-Crop vs. Fallow in the Rhizosphere for Bacteria Transcripts") +
+  geom_point(data=f, fill="red",pch=21, size=4) +
+  coord_flip() 
+ggsave("EnrichmentAnalysis_CC_bacteria_Rh.jpg",width=16,height =7)
+
+data<-read.table("DET_Till_DeSeq_Bacteria.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/9016) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/11385)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:20) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[21]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_Till_bacteria.txt",sep="\t",append=TRUE)
+  }}
+for(i in 1:20) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[21]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_Till_bacteria.txt",sep="\t",append=TRUE)
+  }}
+UP <- read.table(file="phyper_Enrichment_Till_bacteria.txt",sep="\t")
+f <-merge(fin2,UP,by.x="Annotation",by.y="V2")
+DOWN <- read.table(file="phyper_Depletion_Till_bacteria.txt",sep="\t")
+n <-merge(fin2,DOWN,by.x="Annotation",by.y="V2")
+ggplot(fin2, aes(x=reorder(Annotation,FoldEnrichment), y=FoldEnrichment)) +
+  theme_bw()+
+  geom_point(pch=21, size=4,fill="blue") +
+  ylab("Fold Enrichment")+
+  xlab("COG Enrichment")+
+  theme(axis.text.x=element_text(size=12,color="black",face="bold",angle=90), 
+        axis.text.y=element_text(size=12,color="black",face="bold"), 
+        axis.title=element_text(size=12,face="bold"),text=element_text(size=11))+
+  theme(legend.text = element_text(colour="black", size = 12, face = "bold"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black")) +
+  geom_hline(aes(yintercept=1),colour="Black",size=2,linetype="dashed")+
+  theme(strip.text = element_text(size=11,face="bold"))+
+  ggtitle("Fold Enrichment for Conservation vs. Standard Tilling in the Rhizosphere for Bacterial Transcripts") +
+  geom_point(data=f, fill="red",pch=21, size=4) +
+  coord_flip() 
+ggsave("EnrichmentAnalysis_Till_bacteria_Rh.jpg",width=16,height =7)
+
+data<-read.table("DET_CoverCrop_DeSeq_Fungi.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/276) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/414)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:6) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[7]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_CC_fungi_Rh.txt",sep="\t",append=TRUE)}
+}
+for(i in 1:6) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[7]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_CC_fungi_Rh.txt",sep="\t",append=TRUE)}
+}
+UP <- read.table(file="phyper_Enrichment_CC_fungi_Rh.txt",sep="\t")
+f <-merge(fin2,UP,by.x="Annotation",by.y="V2")
+ggplot(fin2, aes(x=reorder(Annotation,FoldEnrichment), y=FoldEnrichment)) +
+  theme_bw()+
+  geom_point(pch=21, size=4,fill="blue") +
+  ylab("Fold Enrichment")+
+  xlab("COG Annotation")+
+  theme(axis.text.x=element_text(size=12,color="black",face="bold",angle=90), 
+        axis.text.y=element_text(size=12,color="black",face="bold"), 
+        axis.title=element_text(size=12,face="bold"),text=element_text(size=11))+
+  theme(legend.text = element_text(colour="black", size = 12, face = "bold"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black")) +
+  geom_hline(aes(yintercept=1),colour="Black",size=2,linetype="dashed")+
+  theme(strip.text = element_text(size=11,face="bold"))+
+  geom_point(data=f, fill="red",pch=21, size=4) +
+  ggtitle("Fold Enrichment for Cover-Crop vs. Fallow in the Rhizosphere for Fungal Transcripts") +
+  coord_flip() 
+ggsave("EnrichmentAnalysis_CC_fungi_Rh.jpg",width=16,height =7)
+
+data<-read.table("DET_Till_DeSeq_Fungi.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/3174) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/4094)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:19) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[20]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_Till_fungi.txt",sep="\t",append=TRUE)}
+}
+for(i in 1:19) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[20]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_Till_fungi.txt",sep="\t",append=TRUE)}
+}
+UP <- read.table(file="phyper_Enrichment_Till_fungi.txt",sep="\t")
+f <-merge(fin2,UP,by.x="Annotation",by.y="V2")
+DOWN <- read.table(file="phyper_Depletion_Till_fungi.txt",sep="\t")
+n <-merge(fin2,DOWN,by.x="Annotation",by.y="V2")
+ggplot(fin2, aes(x=reorder(Annotation,FoldEnrichment), y=FoldEnrichment)) +
+  geom_point(pch=21, size=4,fill="blue") +
+  ylab("Fold Enrichment")+
+  xlab("COG Annotation")+
+  theme(axis.text.x=element_text(size=12,color="black",face="bold",angle=90), 
+        axis.text.y=element_text(size=12,color="black",face="bold"), 
+        axis.title=element_text(size=12,face="bold"),text=element_text(size=11))+
+  theme(legend.text = element_text(colour="black", size = 12, face = "bold"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black")) +
+  geom_hline(aes(yintercept=1),colour="Black",size=2,linetype="dashed")+
+  theme(strip.text = element_text(size=11,face="bold"))+
+  ggtitle("Fold Enrichment for Conservation vs. Standard Tilling in the Rhizosphere for Fungal Transcripts") +
+  geom_point(data=f, fill="red",pch=21, size=4) +
+  coord_flip() 
+ggsave("EnrichmentAnalysis_Till_fungi_Rh.jpg",width=16,height =7)
+```
+
+```{r}
+##Figure 5.
+merged<-rbind(s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12,s14,s15,s17,s18,s21,s22,s23,s24) #S1-S24 are my individual sample .csv files
+#clean up file a bit:
+file<- subset(merged,Sample!="")
+ffile<- subset(file,ano_HMMER!="N")
+ffile$Treatment<-factor(ffile$Treatment, levels=c("ctcc","ctno","stcc","stno"))
+abunplot <- ggplot(ffile, aes(x=ano_HMMER, fill=Treatment)) + geom_histogram(stat="count") +
+  theme(axis.text.x=element_text(size=20,color="black",angle=90), axis.text.y=element_text(size=20,color="black"), axis.title=element_text(size=21,face="bold"),text=element_text(size=21)) +
+  facet_grid(.~SampleType)+
+  scale_fill_manual(values = c("ctcc" = "palegreen4", 
+                                 "ctno" = "palegreen",
+                                 "stcc" = "darkorchid4",
+                                 "stno" = "mediumpurple1")) +
+  ylab("Count")+
+  xlab("CAZy Annotation")+
+  geom_text(stat='count', aes(label=..count..), position = position_stack(vjust = 0.5),size=3) +
+  coord_flip()
+abunplot
+ggsave("CAZyHistogram_all_2.jpg",abunplot,width=12,height =10)
+map <- read.table("map.txt",header=F,sep="\t")
+colnames(map) <- c("Gene_ID","Contig")
+map$X <- paste0(map$Contig,"1")
+phylo <- read.table("phylodist.txt",header=F,sep="\t")
+reference <- merge(map, phylo, by.x="X", by.y="V1", type="all") 
+ref <- separate(data = reference, col = "V5", into = c("Kingdom", "Phylum", "Class", "Order","Family","Genus","Species"), sep = ";")
+file_ref <- merge(merged,ref,by="Gene_ID") #unique(file_ref$Sample)
+file<- subset(file_ref,Sample!="")
+ffile<- subset(file,ano_HMMER!="N")
+ffile$Treatment<-factor(ffile$Treatment, levels=c("ctcc","ctno","stcc","stno"))
+abunplot <- ggplot(ffile, aes(x=ano_HMMER, fill=Phylum)) + geom_histogram(stat="count") +
+  theme(axis.text.x=element_text(size=20,color="black",angle=90), axis.text.y=element_text(size=20,color="black"), axis.title=element_text(size=21,face="bold"),text=element_text(size=21)) +
+  facet_grid(SampleType~Treatment)+
+  scale_fill_manual(values = c("ctcc" = "palegreen4", "ctno" = "palegreen", "stcc" = "darkorchid4", "stno" = "mediumpurple1")) +
+  ylab("Count")+
+  xlab("CAZy Annotation")+
+  geom_text(stat='count', aes(label=..count..), position = position_stack(vjust = 0.5),size=3) +
+  coord_flip()
+abunplot
+ggsave("CAZyAnalysis.jpg",abunplot,width=16,height =7)
+```
+
+```{r}
+##Figure 6.
+###a. Amplicon counts
+GloS <- phyloseq::psmelt(glo)
+SIT_summary <- GloS %>% # the names of the new data frame and the data frame to be summarised ##library(dplyr)
+  group_by(Treatment, Block, Sample_Type) %>%   # the grouping variable
+  summarise(Frequency = sum(Abundance)) 
+SIT_summary
+s_summ <- SIT_summary %>%
+  group_by(Treatment,Sample_Type) %>%
+  summarise(Sum = sum(Frequency),
+            mean_PL = mean(Frequency),  # calculates the mean of each group
+            sd_PL = sd(Frequency), # calculates the standard deviation of each group
+            n_PL = n(),  # calculates the sample size per group
+            SE_PL = sd(Frequency)/sqrt(n())) # calculates the standard error of each group
+s_summary<-as.data.frame(s_summ)
+s_summary
+abunplot <- ggplot(data=s_summary, aes(x=Treatment, y=Sum, fill=Treatment))
+newgraph = abunplot + 
+  geom_bar(stat="identity")+
+  facet_grid(.~Sample_Type, scales = "free", space = "free") + 
+  scale_fill_manual(values = c(
+    "ctcc" = "#548b55",
+    "ctno" = "#97fc97",
+    "stcc" = "#67238b",
+    "stno" = "#ab82ff"
+  ))+
+  theme_bw()+
+  geom_errorbar(aes(ymin = Sum - sd_PL, ymax = Sum + sd_PL), width=0.2)+
+  scale_y_continuous(limits = c(0,350),breaks=c(0,100,200,300))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+newgraph
+ggsave("Counts_Glom_ITS2.jpg",width=12,height =8)
+###b. Meta-transcriptome counts
+gloMT <- subset_taxa(bush_f, Class=="Glomeromycetes")
+sample_data(gloMT)$Sample_Type<-factor(sample_data(gloMT)$Sample_Type, levels=c("Soil","Rhizosphere"))
+GloMT <- phyloseq::psmelt(gloMT)
+unique(GloMT$Class)
+rh_GloMT <- subset.data.frame(GloMT, Sample_Type=="Rhizosphere")
+s_GloMT <- subset.data.frame(GloMT, Sample_Type=="Soil")
+S_summary <- s_GloMT %>% # the names of the new data frame and the data frame to be summarised ##library(dplyr)
+  group_by(Treatment, Block, sample_Sample) %>%   # the grouping variable
+  summarise(Frequency = sum(Abundance)) 
+S_summary
+s_summ <- S_summary %>%
+  group_by(Treatment) %>%
+  summarise(Sum = sum(Frequency),
+            mean_PL = mean(Frequency),  # calculates the mean of each group
+            sd_PL = sd(Frequency), # calculates the standard deviation of each group
+            n_PL = n(),  # calculates the sample size per group
+            SE_PL = sd(Frequency)/sqrt(n())) # calculates the standard error of each group
+s_summary<-as.data.frame(s_summ)
+s_summary
+abunplot <- ggplot(data=s_summary, aes(x=Treatment, y=Sum, fill=Treatment))
+newgraph = abunplot + 
+  geom_bar(stat="identity") +
+  scale_fill_manual(values = c(
+    "ctcc" = "#548b55",
+    "ctno" = "#97fc97",
+    "stcc" = "#67238b",
+    "stno" = "#ab82ff"
+  ))+
+  theme_bw()+
+  geom_errorbar(aes(ymin = Sum - sd_PL, ymax = Sum + sd_PL), width=0.2)+
+  scale_y_continuous(limits = c(0,6000),labels=c(0,2000,4000,6000))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+newgraph
+ggsave("Counts_Soil_MT.jpg",width=4,height =8)
+rh_summary <- rh_GloMT %>% # the names of the new data frame and the data frame to be summarised
+  group_by(Treatment, Block, sample_Sample) %>%   # the grouping variable
+  summarise(Frequency = sum(Abundance)) 
+rh_summ <- rh_summary %>%
+  group_by(Treatment) %>%
+  summarise(Sum = sum(Frequency),
+            mean_PL = mean(Frequency),  # calculates the mean of each group
+            sd_PL = sd(Frequency), # calculates the standard deviation of each group
+            n_PL = n(),  # calculates the sample size per group
+            SE_PL = sd(Frequency)/sqrt(n())) # calculates the standard error of each group
+rh_summary<-as.data.frame(rh_summ)
+abunplot <- ggplot(data=rh_summary, aes(x=Treatment, y=Sum, fill=Treatment))
+newgraph = abunplot + 
+  geom_bar(stat="identity") +#+facet_grid(.~Sample_Type, scales = "free", space = "free") + 
+  scale_fill_manual(values = c(
+    "ctcc" = "#548b55",
+    "ctno" = "#97fc97",
+    "stcc" = "#67238b",
+    "stno" = "#ab82ff"
+  ))+
+  theme_bw()+
+  geom_errorbar(aes(ymin = Sum - sd_PL, ymax = Sum + sd_PL), width=0.2)+
+  scale_y_continuous(limits = c(0,6000),labels=c(0,2000,4000,6000))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("Counts_Rh_MT.jpg",width=4,height =8)
+###c. COG Activity
+dat <- gloMT
+dat$Annotation <- as.character(dat$Annotation)
+genus_abun <- dat %>%
+  group_by(Annotation) %>%
+  summarize(Abundance = sum(Abundance)) %>%
+  arrange(Abundance)
+unique(reorder(dat$Annotation,dat$Abundance))
+ggplot(dat, aes(x=Treatment, y=Abundance, fill=Annotation)) +
+  geom_bar(stat = "identity",position = "fill",color = "NA") +
+  facet_grid(.~Sample_Type)
+  scale_fill_manual(values = c(
+    "Inorganic ion transport and metabolism"="#4d5b6a" #Stiffkey Blue
+    ,"Coenzyme transport and metabolism"="#6a90b4" #Cook's Blue
+    ,"Cell wall/membrane/envelope biogenesis" ="#599ec4" #St. Giles Blue
+    ,"Transcription"="#8d8089"#Brassica
+    ,"Posttranslational modification, protein turnover, chaperones"="#427e83" #Vardo
+    ,"Cell motility"="#686a47" #Bancha
+    ,"Translation, ribosomal structure and biogenesis"="#cb9e59" #India Yellow
+    ,"Signal transduction mechanisms"="#ecc363" #Babouche
+    ,"Energy production and conversion"="#a04344" #Incarnadine
+    ,"Amino acid transport and metabolism"="#bf7a8f" #Rangwali
+    ,"General function prediction only"="#919f70" #Yeabridge Green
+    ,"Other"="#e5e0db" #Strong White
+    ,"Carbohydrate transport and metabolism"="#d65f3d" #Charlotte's Locks
+  ))+
+  coord_flip()+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("RelativeAbun_AMFactivity.jpg",width=4,height =8)
+```
+
+#Supplemental Material
+```{r}
+##Figure S1.
+##Created with Biorender.com
+```
+
+```{r}
+##Figure S2.
+phenodata <- read.delim("PlantHeightBiomass.txt", sep ="\t")
+phenodata$FreshShootMass_g <- as.numeric(phenodata$FreshShootMass_g)
+phenodata$Block <- as.factor(phenodata$Block)
+###a.
+ggplot(phenodata, aes(Treatment, Height_cm, fill=Treatment))+
+  geom_boxplot() +
+  facet_grid(.~Timepoint) +
+  labs(y="Plant Height (cm)") +
+  scale_fill_manual(values = c("ctcc" = "#548b55",
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))+
+  theme(axis.text.x=element_text(size=12,color="black",angle=90), axis.text.y=element_text(size=12,color="black"), axis.title=element_text(size=16,face="bold"),text=element_text(size=16))
+ggsave("PlantHeightbyTreatment.jpg",width= 6,height=6)
+fit <- aov(Height_cm ~ Tilling*CoverCrop*Timepoint, data=phenodata)
+summary(fit)
+TukeyHSD(fit)
+###b.
+ggplot(phenodata, aes(Treatment, FreshShootMass_g, fill=Treatment))+
+  geom_boxplot() +
+  facet_grid(.~Timepoint) +
+  labs(y="Fresh Shoot Biomass (g)") +
+  scale_fill_manual(values = c("ctcc" = "#548b55",
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))+
+  theme(axis.text.x=element_text(size=12,color="black",angle=90), axis.text.y=element_text(size=12,color="black"), axis.title=element_text(size=16,face="bold"),text=element_text(size=16))
+ggsave("PlantBiomassbyTreatment.jpg",width= 6,height=6)
+fit <- aov(FreshShootMass_g ~ Tilling*CoverCrop*Timepoint, data=phenodata)
+summary(fit)
+TukeyHSD(fit)
+###c.
+phenodata <- read.delim("yield.tsv", sep ="\t")
+phenodata$Year<-as.factor(phenodata$Year)
+phenodata$Yield.Kg<-as.numeric(phenodata$Yield.Kg)
+y2016<-subset.data.frame(phenodata, phenodata$Year==2016)
+y2017<-subset.data.frame(phenodata, phenodata$Year==2017)
+ggplot(y2016, aes(Treatment, Yield.Kg, fill=Treatment))+
+  geom_boxplot() +
+  scale_fill_manual(values = c("ctcc" = "#548b55",
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))+
+  theme(axis.text.x=element_text(size=12,color="black",angle=90), axis.text.y=element_text(size=12,color="black"), axis.title=element_text(size=16,face="bold"),text=element_text(size=16))
+ggsave("2016Yield.jpg",width= 6,height=6)
+ggplot(y2017, aes(Treatment, Yield.Kg, fill=Treatment))+
+  geom_boxplot() +
+  scale_fill_manual(values = c("ctcc" = "#548b55",
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))+
+  theme(axis.text.x=element_text(size=12,color="black",angle=90), axis.text.y=element_text(size=12,color="black"), axis.title=element_text(size=16,face="bold"),text=element_text(size=16))
+ggsave("2017Yield.jpg",width= 6,height=6)
+fit <- aov(Yield.Kg ~ Tilling*CoverCrop, data=y2016)
+summary(fit)
+TukeyHSD(fit)
+fit <- aov(Yield.Kg ~ Tilling*CoverCrop, data=y2017)
+summary(fit)
+TukeyHSD(fit)
+```
+
+```{r}
+##Figure S3.
+chemdata <- read.csv("TillingSoilAnalysis.csv")
+ggplot(chemdata, aes(Treatment, pH, fill=Treatment))+
+  geom_boxplot() +
+  labs(y="Soil pH") +
+  scale_fill_manual(values = c("ctcc" = "#548b55",
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))+
+  theme(axis.text.x=element_text(size=12,color="black",angle=90), axis.text.y=element_text(size=12,color="black"), axis.title=element_text(size=16,face="bold"),text=element_text(size=16))
+ggsave("pH.jpg",width= 6,height=6)
+fit <- aov(chemdata$pH ~ chemdata$Treatment, data=chemdata)
+TukeyHSD(fit)
+ggplot(chemdata, aes(Treatment, OM, fill=Treatment))+
+  geom_boxplot() +
+  labs(y="% Soil Organic Matter") +
+  scale_fill_manual(values = c("ctcc" = "#548b55",
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))+
+  theme(axis.text.x=element_text(size=12,color="black",angle=90), axis.text.y=element_text(size=12,color="black"), axis.title=element_text(size=16,face="bold"),text=element_text(size=16))
+ggsave("SOM.jpg",width= 6,height=6)
+fit <- aov(chemdata$OM ~ chemdata$Treatment, data=chemdata)
+TukeyHSD(fit)
+ggplot(chemdata, aes(IndTreatment, CaBaseSat))+
+  geom_boxplot()+
+  scale_fill_manual(values = c("ctcc" = "#548b55",
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))
+  theme(axis.text.x=element_text(size=12,color="black",angle=90), axis.text.y=element_text(size=12,color="black"), axis.title=element_text(size=16,face="bold"),text=element_text(size=16))
+ggsave("CaBaseSat.jpg",width= 6,height=6)
+fit <- aov(chemdata$CaBaseSat ~ chemdata$Treatment, data=chemdata)
+TukeyHSD(fit)
+ggplot(chemdata, aes(IndTreatment, Macronutrients))+
+  geom_boxplot()+
+  scale_fill_manual(values = c("ctcc" = "#548b55",
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))
+  theme(axis.text.x=element_text(size=12,color="black",angle=90), axis.text.y=element_text(size=12,color="black"), axis.title=element_text(size=16,face="bold"),text=element_text(size=16))
+ggsave("Macronutrients.jpg",width= 6,height=6)
+fit <- aov(chemdata$Macronutrients ~ chemdata$Treatment, data=chemdata)
+TukeyHSD(fit)
+ggplot(chemdata, aes(IndTreatment, Micronutrients))+
+  geom_boxplot()+
+  scale_fill_manual(values = c("ctcc" = "#548b55",
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))
+  theme(axis.text.x=element_text(size=12,color="black",angle=90), axis.text.y=element_text(size=12,color="black"), axis.title=element_text(size=16,face="bold"),text=element_text(size=16))
+ggsave("Micronutrients.jpg",width= 6,height=6)
+fit <- aov(chemdata$Micronutrients ~ chemdata$Treatment, data=chemdata)
+TukeyHSD(fit)
+ggplot(chemdata, aes(IndTreatment, Al))+
+  geom_boxplot()+
+  scale_fill_manual(values = c("ctcc" = "#548b55",
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))
+  theme(axis.text.x=element_text(size=12,color="black",angle=90), axis.text.y=element_text(size=12,color="black"), axis.title=element_text(size=16,face="bold"),text=element_text(size=16))
+ggsave("Al.jpg",width= 6,height=6)
+fit <- aov(chemdata$Al ~ chemdata$Treatment, data=chemdata)
+TukeyHSD(fit)
+```
+
+```{r}
+##Figure S4.
+###a. Shannon Diversity, Soil, Time point 1
+richness <- estimate_richness(TP1_soil, split = TRUE, measures = c("Shannon"))
+test <- sample_data(TP1_soil)
+test <- test[,c(2:10)]
+test <- cbind(test, richness)
+test$Timepoint <- as.factor(test$Timepoint)
+test$Block <- as.factor(test$Block)
+TP1_results <- aov(Shannon ~ Tilling*Cover_Crop*Block, data = test)
+summary(TP1_results)
+TukeyHSD(TP1_results, 'Tilling:Cover_Crop')
+p <- plot_richness(TP1_soil,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_16S_TP1_soil.jpg",width=4,height=4)
+###b. Beta Diversity, Soil, Time point 1
+orduniw = ordinate(TP1_soil, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(TP1_soil, orduniw, color="Treatment") +
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_TP1_soil.jpg",p,width=4,height =4)
+###c. Composition, Soil, Time point 1
+glom <- tax_glom(till_rare16, taxrank = "Class")
+dat <- psmelt(glom)
+dat$Class <- as.character(dat$Class)
+dat_1 <- subset(dat, dat$Timepoint=="TP1")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Soil")
+unique(dat_1s$Class)
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Betaproteobacteria","Sva0725","Deltaproteobacteria","Bacilli","Gammaproteobacteria","Sphingobacteria","Alphaproteobacteria","Actinobacteria"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Bacilli"="#4d5b6a" #Stiffkey Blue
+    ,"Betaproteobacteria"="#7997a1" #Stone Blue 
+    ,"Gammaproteobacteria"="#427e83" #Vardo
+    ,"Alphaproteobacteria"="#919f70" #Yeabridge Green
+    ,"Sva0725"="#cb9e59" #India Yellow
+    ,"Sphingobacteria"="#ecc363" #Babouche
+    ,"Deltaproteobacteria"="#d65f3d" #Charlotte's Locks
+    ,"Actinobacteria"="#a04344" #Incarnadine
+    ,"Other"="#e5e0db" #Strong White
+  ))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("16S_RelaAbunClass_TP1s.jpg",newgraph,width=4,height =8)
+###d. Shannon Diversity, Soil, Time point 1
+p <- plot_richness(fTP1_soil,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x=element_blank())
+ggsave("Shannon_ITS2_TP1_soil.jpg",width=4,height=4)
+###e. Beta Diversity, Soil, Time point 1
+orduniw = ordinate(fTP1_soil, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(fTP1_soil, orduniw, color="Treatment") +
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_fTP1_soil.jpg",p,width=4,height =4)
+###f. Composition, Soil, Time point 1
+glom <- tax_glom(till_rare, taxrank = "Class")
+dat <- psmelt(glom)
+dat$Class <- as.character(dat$Class)
+dat$Class[dat$Abundance < 320] <- "Other"
+dat$Class[dat$Class=="unclassified"] <- "Other"
+dat_1 <- subset(dat, dat$Timepoint=="1")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Soil")
+dat_1s<-dat_1s[complete.cases(dat_1s),]
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Orbiliomycetes","Arthoniomycetes","Tremellomycetes","Leotiomycetes","Pezizomycetes","Eurotiomycetes","Agaricomycetes","Dothideomycetes","Sordariomycetes"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Sordariomycetes"="#4d5b6a" #Stiffkey Blue
+    ,"Arthoniomycetes"="#599ec4" #ST Giles Blue
+    ,"Cystobasidiomycetes"="#7997a1" #Stone Blue 
+    ,"Pezizomycetes"="#427e83" #Vardo
+    ,"Agaricomycetes"="#919f70" #Yeabridge Green
+    ,"Leotiomycetes"="#686a47" #Bancha
+    ,"Eurotiomycetes"="#ecc363" #Babouche
+    ,"Orbiliomycetes"="#d65f3d" #Charlotte's Locks
+    ,"Dothideomycetes"="#a04344" #Incarnadine 
+    ,"Tremellomycetes"="#8d8089" #Brassica
+    ,"Other"="#e5e0db" #Strong White
+    ))+ #graphcolorsf) +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("ITS2_RelaAbunClass_TP1s.jpg",newgraph,width=4,height =8)
+```
+
+```{r}
+##Figure S5.
+###a. Shannon Diversity, Time Point 2
+richness <- estimate_richness(TP2_rhizo, split = TRUE, measures = c("Shannon"))
+test <- sample_data(TP2_rhizo)
+test <- test[,c(2:10)]
+test <- cbind(test, richness)
+class(test$Tilling);class(test$Cover_Crop);class(test$Timepoint);class(test$Block);class(test$Shannon)
+test$Timepoint <- as.factor(test$Timepoint)
+test$Block <- as.factor(test$Block)
+TP1_results <- aov(Shannon ~ Tilling*Cover_Crop*Block, data = test)
+summary(TP1_results)
+TukeyHSD(TP1_results, 'Tilling:Cover_Crop')
+p <- plot_richness(TP2_rhizo,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment))) + 
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_16S_TP2_rhizo.jpg",width=4,height=4)
+richness <- estimate_richness(TP2_root, split = TRUE, measures = c("Shannon"))
+test <- sample_data(TP2_root)
+test <- test[,c(2:10)]
+test <- cbind(test, richness)
+class(test$Tilling);class(test$Cover_Crop);class(test$Timepoint);class(test$Block);class(test$Shannon)
+test$Timepoint <- as.factor(test$Timepoint)
+test$Block <- as.factor(test$Block)
+TP1_results <- aov(Shannon ~ Tilling*Cover_Crop*Block, data = test)
+summary(TP1_results)
+TukeyHSD(TP1_results, 'Tilling:Cover_Crop')
+p <- plot_richness(TP2_root,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_16S_TP2_root.jpg",width=4,height=4)
+p <- plot_richness(fTP2_rhizo,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_ITS2_TP2_rhizo.jpg",width=4,height=4)
+p <- plot_richness(fTP2_root,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_ITS2_TP2_root.jpg",width=4,height=4)
+###b. Beta Diversity, Time Point 2
+orduniw = ordinate(TP2_rhizo, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(TP2_rhizo, orduniw, color="Treatment")+
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_TP2_rhizo.jpg",p,width=4,height =4)
+orduniw = ordinate(TP2_root, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(TP2_root, orduniw, color="Treatment") +
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff")) 
+theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank())
+ggsave("CAP_TP2_root.jpg",p,width=4,height =4)
+orduniw = ordinate(fTP2_rhizo, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(fTP2_rhizo, orduniw, color="Treatment")
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank())
+ggsave("CAP_fTP2_rhizo.jpg",p,width=4,height =4)
+orduniw = ordinate(fTP2_root, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(fTP2_root, orduniw, color="Treatment") +
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_fTP2_root.jpg",p,width=4,height =4)
+###c. Shannon Diversity, Time Point 3
+richness <- estimate_richness(TP3_rhizo, split = TRUE, measures = c("Shannon"))
+test <- sample_data(TP3_rhizo)
+test <- test[,c(2:10)]
+test <- cbind(test, richness)
+class(test$Tilling);class(test$Cover_Crop);class(test$Timepoint);class(test$Block);class(test$Shannon)
+test$Timepoint <- as.factor(test$Timepoint)
+test$Block <- as.factor(test$Block)
+TP1_results <- aov(Shannon ~ Tilling*Cover_Crop*Block, data = test)
+summary(TP1_results)
+TukeyHSD(TP1_results, 'Tilling:Cover_Crop')
+p <- plot_richness(TP3_rhizo,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment))) + 
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x=element_blank())
+ggsave("Shannon_16S_TP3_rhizo.jpg",width=4,height=4)
+richness <- estimate_richness(TP3_root, split = TRUE, measures = c("Shannon"))
+test <- sample_data(TP3_root)
+test <- test[,c(2:10)]
+test <- cbind(test, richness)
+class(test$Tilling);class(test$Cover_Crop);class(test$Timepoint);class(test$Block);class(test$Shannon)
+test$Timepoint <- as.factor(test$Timepoint)
+test$Block <- as.factor(test$Block)
+TP1_results <- aov(Shannon ~ Tilling*Cover_Crop*Block, data = test)
+summary(TP1_results)
+TukeyHSD(TP1_results, 'Tilling:Cover_Crop')
+p <- plot_richness(TP3_root,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        axis.text.x=element_blank())
+ggsave("Shannon_16S_TP3_root.jpg",width=4,height=4)
+p <- plot_richness(fTP3_rhizo,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_ITS2_TP3_rhizo.jpg",width=4,height=4)
+p <- plot_richness(fTP3_root,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  facet_grid(Sample_Type~Timepoint) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_ITS2_TP3_root.jpg",width=4,height=4)
+###d. Beta Diversity, Time Point 3
+orduniw = ordinate(TP3_rhizo, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(TP3_rhizo, orduniw, color="Treatment")+
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))
+theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank())
+ggsave("CAP_TP3_rhizo.jpg",p,width=4,height =4)
+orduniw = ordinate(TP3_root, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(TP3_root, orduniw, color="Treatment") +
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank())
+ggsave("CAP_TP3_root.jpg",p,width=4,height =4)
+orduniw = ordinate(fTP3_rhizo, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(fTP3_rhizo, orduniw, color="Treatment")+
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_TP3_rhizo.jpg",p,width=4,height =4)
+orduniw = ordinate(fTP3_root, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(fTP3_root, orduniw, color="Treatment") +
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff")) +
+theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank())
+ggsave("CAP_fTP3_root.jpg",p,width=4,height =4)
+```
+
+```{r}
+##Figure S6.
+###a. Shannon Diversity, Soil, Time Point 2
+richness <- estimate_richness(TP2_soil, split = TRUE, measures = c("Shannon"))
+test <- sample_data(TP2_soil)
+test <- test[,c(2:10)]
+test <- cbind(test, richness)
+class(test$Tilling);class(test$Cover_Crop);class(test$Timepoint);class(test$Block);class(test$Shannon)
+test$Timepoint <- as.factor(test$Timepoint)
+test$Block <- as.factor(test$Block)
+TP1_results <- aov(Shannon ~ Tilling*Cover_Crop*Block, data = test)
+summary(TP1_results)
+TukeyHSD(TP1_results, 'Tilling:Cover_Crop')
+p <- plot_richness(TP2_soil,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_16S_TP2_soil.jpg",width=4,height=4)
+p <- plot_richness(fTP2_soil,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment))) +
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_ITS2_TP2_soil.jpg",width=4,height=4)
+###b. Beta Diversity, Soil, Time Point 2
+orduniw = ordinate(TP2_soil, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(TP2_soil, orduniw, color="Treatment") +
+  #  facet_grid(.~Timepoint) +
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_TP2_soil.jpg",p,width=4,height =4)
+orduniw = ordinate(fTP2_soil, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(fTP2_soil, orduniw, color="Treatment") +
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_fTP2_soil.jpg",p,width=4,height =4)
+###c. Composition, Soil, Time Point 2
+glom <- tax_glom(till_rare16, taxrank = "Class")
+dat <- psmelt(glom)
+dat_1 <- subset(dat, dat$Timepoint=="TP2")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Soil")
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Betaproteobacteria","Thermomicrobia","Deltaproteobacteria","Bacilli","Gammaproteobacteria","Sphingobacteria","Actinobacteria","Alphaproteobacteria"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") ++ 
+  scale_fill_manual(values = c(
+    "Bacilli"="#4d5b6a" #Stiffkey Blue
+    ,"Betaproteobacteria"="#7997a1" #Stone Blue 
+    ,"Gammaproteobacteria"="#427e83" #Vardo
+    ,"Alphaproteobacteria"="#919f70"
+    ,"Thermomicrobia"="#c57b67" #Red Earth
+    ,"Sphingobacteria"="#ecc363" #Babouche
+    ,"Deltaproteobacteria"="#d65f3d" #Charlotte's Locks
+    ,"Actinobacteria"="#a04344" #Incarnadine 
+    ,"Other"="#e5e0db" #Strong White
+  ))+ 
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("16S_RelaAbunClass_TP2s.jpg",newgraph,width=4,height =8)
+glom <- tax_glom(till_rare, taxrank = "Class")
+dat <- psmelt(glom)
+dat$Class <- as.character(dat$Class)
+dat$Class[dat$Abundance < 270] <- "Other"
+dat$Class[dat$Class=="unclassified"] <- "Other"
+dat_1 <- subset(dat, dat$Timepoint=="2")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Soil")
+dat_1s<-dat_1s[complete.cases(dat_1s),]
+reorder(dat_1s$Class, dat_1s$Abundance)
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Orbiliomycetes","Tremellomycetes","Leotiomycetes","Agaricomycetes","Eurotiomycetes","Pezizomycetes","Dothideomycetes","Sordariomycetes"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +# facet_grid(Timepoint~Sample_Type, scales = "free", space = "free")  
+  scale_fill_manual(values = c(
+    "Sordariomycetes"="#4d5b6a" #Stiffkey Blue
+    ,"Arthoniomycetes"="#599ec4" #ST Giles Blue
+    ,"Cystobasidiomycetes"="#7997a1" #Stone Blue 
+    ,"Pezizomycetes"="#427e83" #Vardo
+    ,"Agaricomycetes"="#919f70" #Yeabridge Green
+    ,"Leotiomycetes"="#686a47" #Bancha
+    ,"Eurotiomycetes"="#ecc363" #Babouche
+    ,"Orbiliomycetes"="#d65f3d" #Charlotte's Locks
+    ,"Dothideomycetes"="#a04344" #Incarnadine 
+    ,"Tremellomycetes"="#8d8089" #Brassica
+    ,"Other"="#e5e0db" #Strong White
+  ))+ #graphcolorsf) +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("ITS2_RelaAbunClass_TP2s.jpg",newgraph,width=4,height =8)
+###d. Shannon Diversity, Soil, Time Point 3
+richness <- estimate_richness(TP3_soil, split = TRUE, measures = c("Shannon"))
+test <- sample_data(TP3_soil)
+test <- test[,c(2:10)]
+test <- cbind(test, richness)
+class(test$Tilling);class(test$Cover_Crop);class(test$Timepoint);class(test$Block);class(test$Shannon)
+test$Timepoint <- as.factor(test$Timepoint)
+test$Block <- as.factor(test$Block)
+TP1_results <- aov(Shannon ~ Tilling*Cover_Crop*Block, data = test)
+summary(TP1_results)
+TukeyHSD(TP1_results, 'Tilling:Cover_Crop')
+p <- plot_richness(TP3_soil,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment))) +
+theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_16S_TP3_soil.jpg",width=4,height=4)
+p <- plot_richness(fTP3_soil,x="Treatment", measures=c("Shannon")) +
+  geom_point(size=1) +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff")) +
+  geom_boxplot(aes(fill=factor(Treatment)))+
+  scale_y_continuous(breaks=c(3.3,3.6,3.9))+
+  theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      axis.text.x=element_blank())
+ggsave("Shannon_ITS2_TP3_soil.jpg",width=4,height=4)
+###e. Beta Diversity, Soil, Time point 3
+orduniw = ordinate(TP3_soil, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(TP3_soil, orduniw, color="Treatment") +
+  #  facet_grid(.~Timepoint) +
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_TP3_soil.jpg",p,width=4,height =4)
+orduniw = ordinate(fTP3_soil, "bray", weighted=FALSE, method="CAP", formula=~Tilling+Cover_Crop)
+p = plot_ordination(fTP3_soil, orduniw, color="Treatment") +
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_fTP3_soil.jpg",p,width=4,height =4)
+###f. Composition, Soil, Time point 3
+glom <- tax_glom(till_rare16, taxrank = "Class")
+dat <- psmelt(glom)
+dat_1 <- subset(dat, dat$Timepoint=="TP3")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Soil")
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Betaproteobacteria","Thermomicrobia","Deltaproteobacteria","Bacilli","Gammaproteobacteria","Sphingobacteria","Alphaproteobacteria","Actinobacteria"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Bacilli"="#4d5b6a" #Stiffkey Blue
+    ,"Betaproteobacteria"="#7997a1" #Stone Blue 
+    ,"Gammaproteobacteria"="#427e83" #Vardo
+    ,"Alphaproteobacteria"="#919f70" #Yeabridge Green
+    ,"Thermomicrobia"="#c57b67" #Red Earth
+    ,"Sphingobacteria"="#ecc363" #Babouche
+    ,"Deltaproteobacteria"="#d65f3d" #Charlotte's Locks
+    ,"Actinobacteria"="#a04344" #Incarnadine
+    ,"Other"="#e5e0db" #Strong White
+  ))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("16S_RelaAbunClass_TP3s.jpg",newgraph,width=4,height =8)
+glom <- tax_glom(till_rare, taxrank = "Class")
+dat <- psmelt(glom)
+dat$Class <- as.character(dat$Class)
+dat$Class[dat$Abundance < 320] <- "Other"
+dat$Class[dat$Class=="unclassified"] <- "Other"
+dat_1 <- subset(dat, dat$Timepoint=="3")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Soil")
+dat_1s<-dat_1s[complete.cases(dat_1s),]
+reorder(dat_1s$Class, dat_1s$Abundance)
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Cystobasidiomycetes","Leotiomycetes","Agaricomycetes","Tremellomycetes","Eurotiomycetes","Pezizomycetes","Dothideomycetes","Sordariomycetes"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +# facet_grid(Timepoint~Sample_Type, scales = "free", space = "free")  
+  scale_fill_manual(values = c(
+    "Sordariomycetes"="#4d5b6a" #Stiffkey Blue
+    ,"Arthoniomycetes"="#599ec4" #ST Giles Blue
+    ,"Cystobasidiomycetes"="#7997a1" #Stone Blue 
+    ,"Pezizomycetes"="#427e83" #Vardo
+    ,"Agaricomycetes"="#919f70" #Yeabridge Green
+    ,"Leotiomycetes"="#686a47" #Bancha
+    ,"Eurotiomycetes"="#ecc363" #Babouche
+    ,"Orbiliomycetes"="#d65f3d" #Charlotte's Locks
+    ,"Dothideomycetes"="#a04344" #Incarnadine 
+    ,"Tremellomycetes"="#8d8089" #Brassica
+    ,"Other"="#e5e0db" #Strong White
+  ))+ 
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("ITS2_RelaAbunClass_TP3s.jpg",newgraph,width=4,height =8)
+```
+
+```{r}
+##Figure S7.
+###a. Composition, Rhizospheres and Roots, Time point 2
+glom <- tax_glom(till_rare16, taxrank = "Class")
+dat <- psmelt(glom)
+dat_1 <- subset(dat, dat$Timepoint=="TP2")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Rhizosphere")
+unique(dat_1s$Class)
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Betaproteobacteria","Thermomicrobia","Deltaproteobacteria","Bacilli","Gammaproteobacteria","Alphaproteobacteria","Sphingobacteria","Actinobacteria"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Bacilli"="#4d5b6a" #Stiffkey Blue
+    ,"Betaproteobacteria"="#7997a1" #Stone Blue 
+    ,"Gammaproteobacteria"="#427e83" #Vardo
+    ,"Alphaproteobacteria"="#919f70" #Yeabridge Green
+    ,"Thermomicrobia"="#c57b67" #Red Earth
+    ,"Sphingobacteria"="#ecc363" #Babouche
+    ,"Deltaproteobacteria"="#d65f3d" #Charlotte's Locks
+    ,"Actinobacteria"="#a04344" #Incarnadine "darkred"
+    ,"Other"="#e5e0db" #Strong White
+  ))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("16S_RelaAbunClass_TP2rh.jpg",newgraph,width=4,height=8)
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Root")
+unique(dat_1s$Class)
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Betaproteobacteria","Thermomicrobia","Deltaproteobacteria","Bacilli","Gammaproteobacteria","Alphaproteobacteria","Sphingobacteria","Actinobacteria"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill")
+  scale_fill_manual(values = c(
+    "Bacilli"="#4d5b6a" #Stiffkey Blue
+    ,"Betaproteobacteria"="#7997a1" #Stone Blue 
+    ,"Gammaproteobacteria"="#427e83" #Vardo
+    ,"Alphaproteobacteria"="#919f70" #Yeabridge Green
+    ,"Sva0725"="#cb9e59" #India Yellow
+    ,"Sphingobacteria"="#ecc363" #Babouche
+    ,"Thermomicrobia"="#c57b67" #Red Earth
+    ,"Deltaproteobacteria"="#d65f3d" #Charlotte's Locks
+    ,"Actinobacteria"="#a04344" #Incarnadine "darkred"
+    ,"Other"="#e5e0db" #Strong White
+  ))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("16S_RelaAbunClass_TP2root.jpg",newgraph,width=4,height =8)
+glom <- tax_glom(till_rare, taxrank = "Class")
+dat <- psmelt(glom)
+dat_1 <- subset(dat, dat$Timepoint=="2")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Rhizosphere")
+dat_1s<-dat_1s[complete.cases(dat_1s),]
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Orbiliomycetes","Arthoniomycetes","Tremellomycetes","Agaricomycetes","Leotiomycetes","Pezizomycetes","Eurotiomycetes","Dothideomycetes","Sordariomycetes"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Sordariomycetes"="#4d5b6a" #Stiffkey Blue
+    ,"Arthoniomycetes"="#599ec4" #ST Giles Blue
+    ,"Cystobasidiomycetes"="#7997a1" #Stone Blue 
+    ,"Pezizomycetes"="#427e83" #Vardo
+    ,"Agaricomycetes"="#919f70" #Yeabridge Green
+    ,"Leotiomycetes"="#686a47" #Bancha
+    ,"Eurotiomycetes"="#ecc363" #Babouche
+    ,"Orbiliomycetes"="#d65f3d" #Charlotte's Locks
+    ,"Dothideomycetes"="#a04344" #Incarnadine 
+    ,"Tremellomycetes"="#8d8089" #Brassica
+    ,"Other"="#e5e0db" #Strong White
+  ))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+newgraph
+ggsave("ITS2_RelaAbunClass_TP2rh.jpg",newgraph,width=4,height=8)
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Root")
+dat_1s<-dat_1s[complete.cases(dat_1s),]
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Orbiliomycetes","Arthoniomycetes","Tremellomycetes","Leotiomycetes","Pezizomycetes","Agaricomycetes","Dothideomycetes","Eurotiomycetes","Sordariomycetes"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +#facet_grid(Timepoint~Sample_Type, scales = "free", space = "free") + 
+  scale_fill_manual(values = c(
+    "Sordariomycetes"="#4d5b6a" #Stiffkey Blue
+    ,"Arthoniomycetes"="#599ec4" #ST Giles Blue
+    ,"Cystobasidiomycetes"="#7997a1" #Stone Blue 
+    ,"Pezizomycetes"="#427e83" #Vardo
+    ,"Agaricomycetes"="#919f70" #Yeabridge Green
+    ,"Leotiomycetes"="#686a47" #Bancha
+    ,"Eurotiomycetes"="#ecc363" #Babouche
+    ,"Orbiliomycetes"="#d65f3d" #Charlotte's Locks
+    ,"Dothideomycetes"="#a04344" #Incarnadine 
+    ,"Tremellomycetes"="#8d8089" #Brassica
+    ,"Other"="#e5e0db" #Strong White
+  )) +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("ITS2_RelaAbunClass_TP2root.jpg",newgraph,width=4,height =8)
+###b. Composition, Rhizospheres and Roots, Time point 3
+glom <- tax_glom(till_rare16, taxrank = "Class")
+dat <- psmelt(glom)
+dat_1 <- subset(dat, dat$Timepoint=="TP3")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Rhizosphere")
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Betaproteobacteria","Thermomicrobia","Deltaproteobacteria","Bacilli","Gammaproteobacteria","Sphingobacteria","Alphaproteobacteria","Actinobacteria"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Bacilli"="#4d5b6a" #Stiffkey Blue
+    ,"Betaproteobacteria"="#7997a1" #Stone Blue 
+    ,"Gammaproteobacteria"="#427e83" #Vardo
+    ,"Alphaproteobacteria"="#919f70" #Yeabridge Green
+    ,"Thermomicrobia"="#c57b67" #Red Earth
+    ,"Sphingobacteria"="#ecc363" #Babouche
+    ,"Deltaproteobacteria"="#d65f3d" #Charlotte's Locks
+    ,"Actinobacteria"="#a04344" #Incarnadine
+    ,"Other"="#e5e0db" #Strong White
+  ))+ 
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("16S_RelaAbunClass_TP3rh.jpg",newgraph,width=4,height =8)
+glom <- tax_glom(till_rare16, taxrank = "Class")
+dat <- psmelt(glom)
+dat_1 <- subset(dat, dat$Timepoint=="TP3")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Root")
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Thermomicrobia","Deltaproteobacteria","Bacilli","Sphingobacteria","Betaproteobacteria","Gammaproteobacteria","Alphaproteobacteria","Actinobacteria"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill")+ 
+  scale_fill_manual(values = c(
+    "Bacilli"="#4d5b6a" #Stiffkey Blue
+    ,"Betaproteobacteria"="#7997a1" #Stone Blue 
+    ,"Gammaproteobacteria"="#427e83" #Vardo
+    ,"Alphaproteobacteria"="#919f70" #Yeabridge Green
+    ,"Sva0725"="#cb9e59" #India Yellow
+    ,"Sphingobacteria"="#ecc363" #Babouche
+    ,"Thermomicrobia"="#c57b67" #Red Earth
+    ,"Deltaproteobacteria"="#d65f3d" #Charlotte's Locks
+    ,"Actinobacteria"="#a04344" #Incarnadine
+    ,"Other"="#e5e0db" #Strong White
+  ))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("16S_RelaAbunClass_TP3root.jpg",newgraph,width=4,height =8)
+glom <- tax_glom(till_rare, taxrank = "Class")
+dat <- psmelt(glom)
+dat$Class <- as.character(dat$Class)
+dat$Class[dat$Abundance < 320] <- "Other"
+dat$Class[dat$Class=="unclassified"] <- "Other"
+reorder(dat$Class, dat$Abundance)
+dat_1 <- subset(dat, dat$Timepoint=="3")
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Rhizosphere")
+dat_1s<-dat_1s[complete.cases(dat_1s),]
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Orbiliomycetes","Arthoniomycetes","Agaricomycetes","Leotiomycetes","Pezizomycetes","Tremellomycetes","Eurotiomycetes","Dothideomycetes","Sordariomycetes"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Sordariomycetes"="#4d5b6a" #Stiffkey Blue
+    ,"Arthoniomycetes"="#599ec4" #St. Giles Blue
+    ,"Cystobasidiomycetes"="#7997a1" #Stone Blue 
+    ,"Pezizomycetes"="#427e83" #Vardo
+    ,"Agaricomycetes"="#919f70" #Yeabridge Green
+    ,"Leotiomycetes"="#686a47" #Bancha
+    ,"Eurotiomycetes"="#ecc363" #Babouche
+    ,"Orbiliomycetes"="#d65f3d" #Charlotte's Locks
+    ,"Dothideomycetes"="#a04344" #Incarnadine 
+    ,"Tremellomycetes"="#8d8089" #Brassica
+    ,"Other"="#e5e0db" #Strong White
+  ))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("ITS2_RelaAbunClass_TP3rh.jpg",newgraph,width=4,height =8)
+dat_1s <- subset(dat_1, dat_1$Sample_Type=="Root")
+dat_1s<-dat_1s[complete.cases(dat_1s),]
+dat_1s$Class<-factor(dat_1s$Class,levels=c("Other","Orbiliomycetes","Arthoniomycetes","Agaricomycetes","Leotiomycetes","Pezizomycetes","Tremellomycetes","Eurotiomycetes","Dothideomycetes","Sordariomycetes"))
+abunplot <- ggplot(data=dat_1s, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") + 
+  scale_fill_manual(values = c(
+    "Sordariomycetes"="#4d5b6a" #Stiffkey Blue
+    ,"Arthoniomycetes"="#599ec4" #St. Giles Blue
+    ,"Cystobasidiomycetes"="#7997a1" #Stone Blue 
+    ,"Pezizomycetes"="#427e83" #Vardo
+    ,"Agaricomycetes"="#919f70" #Yeabridge Green
+    ,"Leotiomycetes"="#686a47" #Bancha
+    ,"Eurotiomycetes"="#ecc363" #Babouche
+    ,"Orbiliomycetes"="#d65f3d" #Charlotte's Locks
+    ,"Dothideomycetes"="#a04344" #Incarnadine 
+    ,"Tremellomycetes"="#8d8089" #Brassica
+    ,"Other"="#e5e0db" #Strong White
+  )) +
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("ITS2_RelaAbunClass_TP3root.jpg",newgraph,width=4,height =8)
+```
+
+```{r}
+##Figure S8.
+###a.
+hdRootsub <- till_rare16
+w=get_indicators(hdRootsub,"Till_Type")
+w
+sample_data(hdRootsub)$Till_Type
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hdRootsub)[w$sig.indvals$OTU, ], "matrix"))
+c_tax <- sigtab
+write.table(c_tax,"16S_TillIndicators.csv",sep=",")
+phy_in <- read.csv("16S_TillIndicators.csv")
+phy_in$count="1"
+c_phy_in <- subset(phy_in, Label%in%c("Conservation_Till","Standard_Till"))
+c_phy_in$count <- as.numeric(c_phy_in$count)
+c_phy_in$Phylum<-factor(c_phy_in$Phylum,levels=c("Proteobacteria", 
+                                                 "Actinobacteria", 
+                                                 "Chloroflexi", 
+                                                 "Bacteroidetes", 
+                                                 "Acidobacteria", 
+                                                 "Gemmatimonadetes", 
+                                                 "Verrucomicrobia", 
+                                                 "TM7", 
+                                                 "unclassified", 
+                                                 "Firmicutes", 
+                                                 "Planctomycetes", 
+                                                 "TM6", 
+                                                 "Euryarchaeota", 
+                                                 "Armatimonadetes", 
+                                                 "CCM11b", 
+                                                 "Cyanobacteria", 
+                                                 "Elusimicrobia", 
+                                                 "Nitrospirae", 
+                                                 "BRC1", 
+                                                 "Chlamydiae", 
+                                                 "Chlorobi", 
+                                                 "Crenarchaeota", 
+                                                 "GN02", 
+                                                 "SC3", 
+                                                 "Tenericutes", 
+                                                 "WPS",
+                                                 "SPAM",
+                                                 "SC4"
+                                                 ))
+a<-c_phy_in %>% 
+  group_by(Phylum) %>%
+  summarise(no_rows = length(Phylum))
+abunplot <- ggplot(data=c_phy_in, aes(x=Phylum, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") +  
+  scale_fill_manual(values = c("Conservation_Till" = "#6e976a",
+                               "Standard_Till" = "#704885"))+
+  coord_flip()+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("16S_TillIndicators_Phylum.jpg",newgraph,width=7,height =5)
+hdRootsub <- till_rare16
+w=get_indicators(hdRootsub,"Cover_Type")
+w
+sample_data(hdRootsub)$Cover_Type
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hdRootsub)[w$sig.indvals$OTU, ], "matrix"))
+c_tax <- sigtab
+write.table(c_tax,"16S_CoverIndicators.csv",sep=",")
+phy_in <- read.csv("16S_CoverIndicators.csv")
+phy_in$count="1"
+c_phy_in <- subset(phy_in, Label%in%c("Cover_Crop","Fallow"))
+c_phy_in$count <- as.numeric(c_phy_in$count)
+c_phy_in$Phylum<-factor(c_phy_in$Phylum,levels=c("Proteobacteria", 
+                                                 "Actinobacteria", 
+                                                 "Chloroflexi", 
+                                                 "Bacteroidetes", 
+                                                 "Acidobacteria", 
+                                                 "Gemmatimonadetes", 
+                                                 "Verrucomicrobia", 
+                                                 "TM7", 
+                                                 "unclassified", 
+                                                 "Firmicutes", 
+                                                 "Planctomycetes", 
+                                                 "TM6", 
+                                                 "Euryarchaeota", 
+                                                 "Armatimonadetes", 
+                                                 "CCM11b", 
+                                                 "Cyanobacteria", 
+                                                 "Elusimicrobia", 
+                                                 "Nitrospirae", 
+                                                 "BRC1", 
+                                                 "Chlamydiae", 
+                                                 "Chlorobi", 
+                                                 "Crenarchaeota", 
+                                                 "GN02", 
+                                                 "SC3", 
+                                                 "Tenericutes", 
+                                                 "WPS",
+                                                 "SPAM",
+                                                 "SC4")
+)
+abunplot <- ggplot(data=c_phy_in, aes(x=Phylum, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + 
+  scale_fill_manual(values = c("Cover_Crop" = "#828282", 
+                               "Fallow" = "#d0d0d0"))+
+  coord_flip()+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("16S_CoverIndicators_Phylum.jpg",newgraph,width=7,height =5)
+###b.
+hdRootsub <- till_rare
+w=get_indicators(hdRootsub,"Till_Type")
+w
+sample_data(hdRootsub)$Till_Type
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hdRootsub)[w$sig.indvals$OTU, ], "matrix"))
+c_tax <- sigtab
+write.table(c_tax,"ITS2_TillIndicators.csv",sep=",")
+phy_in <- read.csv("ITS2_TillIndicators.csv")
+phy_in$count="1"
+c_phy_in <- subset(phy_in, Label%in%c("Conservation_Till","Standard_Till"))
+c_phy_in$count <- as.numeric(c_phy_in$count)
+c_phy_in$Phylum<-factor(c_phy_in$Phylum,levels=c("Ascomycota","Basidiomycota",
+                                                 "Chytridiomycota","Glomeromycota",
+                                                 "unclassified"))
+abunplot <- ggplot(data=c_phy_in, aes(x=Phylum, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") +
+  scale_fill_manual(values = c("Conservation_Till" = "#233f22", 
+                               "Standard_Till" = "#3c0958"))+
+  coord_flip()+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("ITS2_TillIndicators_Phylum.jpg",newgraph,width=9,height =3)
+hdRootsub <- till_rare16
+w=get_indicators(hdRootsub,"Cover_Type")
+w
+sample_data(hdRootsub)$Cover_Type
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hdRootsub)[w$sig.indvals$OTU, ], "matrix"))
+c_tax <- sigtab
+write.table(c_tax,"ITS2_CoverIndicators.csv",sep=",")
+phy_in <- read.csv("ITS2_CoverIndicators.csv")
+phy_in$count="1"
+c_phy_in <- subset(phy_in, Label%in%c("Cover_Crop","Fallow"))
+c_phy_in$count <- as.numeric(c_phy_in$count)
+c_phy_in$Phylum<-factor(c_phy_in$Phylum,levels=c("Ascomycota","Basidiomycota",
+                                                 "Chytridiomycota","Glomeromycota",
+                                                 "unclassified"))
+c_phy_in %>% 
+  group_by(Phylum) %>%
+  summarise(no_rows = length(Phylum))
+abunplot <- ggplot(data=c_phy_in, aes(x=Phylum, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + 
+  scale_fill_manual(values = c("Cover_Crop" = "#828282", 
+                               "Fallow" = "#d0d0d0"))+
+  coord_flip()
+ggsave("ITS2_CoverIndicators_Phylum.jpg",newgraph,width=9,height =3)
+```
+
+```{r}
+##Figure S9.
+##Created with iTOL, Letunic and Bork (2019) Nucleic Acids Res doi: 10.1093/nar/gkz239
+```
+
+```{r}
+##Figure S10.
+##Created with iTOL, Letunic and Bork (2019) Nucleic Acids Res doi: 10.1093/nar/gkz239
+```
+
+```{r}
+##Figure S11.
+###a. Beta diversity, active bacterial communities
+orduniw = ordinate(Soilb, "bray", weighted=FALSE, method="CAP", formula=~Till+Cover_Crop)
+p = plot_ordination(Soilb, orduniw, color="Treatment")+
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_Soilb.jpg",p,width=4,height =4)
+orduniw = ordinate(rhib, "bray", weighted=FALSE, method="CAP", formula=~Till+Cover_Crop)
+p = plot_ordination(rhib, orduniw, color="Treatment")+
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_rhib.jpg",p,width=4,height =4)
+###b. Beta diversity, active fungal communities
+orduniw = ordinate(Soilf, "bray", weighted=FALSE, method="CAP", formula=~Till+Cover_Crop)
+p = plot_ordination(Soilf, orduniw, color="Treatment")+
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_Soilf.jpg",p,width=4,height =4)
+orduniw = ordinate(rhif, "bray", weighted=FALSE, method="CAP", formula=~Till+Cover_Crop)
+p = plot_ordination(rhif, orduniw, color="Treatment")+
+  geom_point(size=5) + 
+  geom_point(colour="black", pch=21, size=5) +
+  scale_colour_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAP_rhif.jpg",p,width=4,height =4)
+```
+
+```{r}
+##Figure S12.
+###a. Composition
+dat<- tax_b
+dat$Class <- as.character(dat$Class)
+unique(reorder(dat$Class,dat$Abundance))
+genus_abun <- dat %>%
+  group_by(Class) %>%
+  summarize(Abundance = sum(Abundance)) %>%
+  arrange(Abundance)
+minus<-as.data.frame(genus_abun$Class[genus_abun$Abundance < 92000])
+colnames(minus)<-"other"
+dat$Class[which(dat$Class%in%minus$other)]="Other"
+dat$Class<-factor(dat$Class,levels=c("Other","Bacilli","Cytophagia","Deltaproteobacteria","Betaproteobacteria","Clostridia","Rubrobacteria","Gammaproteobacteria","Actinobacteria","Alphaproteobacteria"))
+dat_1 <- subset(dat, dat$Sample_Type=="Soil")
+dat_1$Class<-factor(dat_1$Class,levels=c("Other","Rubrobacteria","Clostridia","Bacilli","Cytophagia","Betaproteobacteria","Gammaproteobacteria","Deltaproteobacteria","Actinobacteria","Alphaproteobacteria"))
+abunplot <- ggplot(data=dat_1, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +
+  scale_fill_manual(values = c(
+    "Bacilli"="#4d5b6a" #Stiffkey Blue
+    ,"Betaproteobacteria"="#7997a1" #Stone Blue 
+    ,"Gammaproteobacteria"="#427e83" #Vardo
+    ,"Alphaproteobacteria"="#919f70" #Yeabridge Green
+    ,"Clostridia"="#cb9e59" #India Yellow
+    ,"Cytophagia"="#ecc363" #Babouche
+    ,"Deltaproteobacteria"="#d65f3d" #Charlotte's Locks
+    ,"Actinobacteria"="#a04344" #Incarnadine
+    ,"Rubrobacteria"="#bf7a8f" #Rangwali
+    ,"Other"="#e5e0db" #Strong White
+  ))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+newgraph
+ggsave("Bacteria_RelaAbunClass_soil.jpg",newgraph,width=4,height =8)
+dat<- tax_f
+dat$Class <- as.character(dat$Class)
+unique(reorder(dat$Class,dat$Abundance))
+genus_abun <- dat %>%
+  group_by(Class) %>%
+  summarize(Abundance = sum(Abundance)) %>%
+  arrange(Abundance)
+minus<-as.data.frame(genus_abun$Class[genus_abun$Abundance < 35000])
+colnames(minus)<-"other"
+dat$Class[which(dat$Class%in%minus$other)]="Other"
+dat$Class<-factor(dat$Class,levels=c("Other","Basidiobolomycetes","Eurotiomycetes","Schizosaccharomycetes","Pezizomycetes","Saccharomycetes","Agaricomycetes","Dothideomycetes","unclassified_Mucoromycota","Sordariomycetes"))
+dat_1 <- subset(dat, dat$Sample_Type=="Soil")
+dat_1$Class<-factor(dat_1$Class,levels=c("Other","Schizosaccharomycetes","Eurotiomycetes","Basidiobolomycetes","Pezizomycetes","unclassified_Mucoromycota","Saccharomycetes","Agaricomycetes","Dothideomycetes","Sordariomycetes"))
+abunplot <- ggplot(data=dat_1, aes(x=Treatment, y=Abundance, fill=Class))
+newgraph = abunplot + 
+  geom_bar(stat="identity",position = "fill") +#facet_grid(Timepoint~Sample_Type, scales = "free", space = "free") + 
+  scale_fill_manual(values = c(
+    "Sordariomycetes"="#4d5b6a" #Stiffkey Blue
+    ,"Arthoniomycetes"="#599ec4" #St. Giles Blue
+    ,"Basidiobolomycetes"="#7997a1" #Stone Blue 
+    ,"Pezizomycetes"="#427e83" #Vardo
+    ,"Agaricomycetes"="#919f70" #Yeabridge Green
+    ,"Schizosaccharomycetes"="#686a47" #Bancha
+    ,"Eurotiomycetes"="#ecc363" #Babouche
+    ,"Saccharomycetes"="#d65f3d" #Charlotte's Locks
+    ,"Dothideomycetes"="#a04344" #Incarnadine
+    ,"unclassified_Mucoromycota"="#8d8089" #Brassica
+    ,"Other"="#e5e0db" #Strong White
+  ))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("Fungi_RelaAbunClass_soil.jpg",newgraph,width=4,height =8)
+###b. COG Activity
+dat <- tax_b
+dat$Annotation <- as.character(dat$Annotation)
+genus_abun <- dat %>%
+  group_by(Annotation) %>%
+  summarize(Abundance = sum(Abundance)) %>%
+  arrange(Abundance)
+genus_abun
+dat$Annotation[dat$Annotation=="Cytoskeleton"]<-"Other"
+dat$Annotation[dat$Annotation=="Defense mechanisms"]<-"Other"
+dat$Annotation[dat$Annotation=="Cell motility"]<-"Other"
+dat$Annotation[dat$Annotation=="Cell cycle control, cell division, chromosome partitioning"]<-"Other"
+dat$Annotation[dat$Annotation=="Chromatin structure and dynamics"]<-"Other"
+dat$Annotation[dat$Annotation=="Nucleotide transport and metabolism"]<-"Other"
+dat$Annotation[dat$Annotation=="Secondary metabolites biosynthesis, transport and catabolism"]<-"Other"
+dat$Annotation[dat$Annotation=="Intracellular trafficking, secretion, and vesicular transport"]<-"Other"
+dat$Annotation[dat$Annotation=="Lipid transport and metabolism"]<-"Other"
+dat$Annotation[dat$Annotation=="Replication, recombination and repair"]<-"Other"
+dat$Annotation[dat$Annotation=="Cell wall/membrane/envelope biogenesis"]<-"Other"
+dat$Annotation[dat$Annotation=="Function unknown"]<-"Other"
+unique(reorder(dat$Annotation,dat$Abundance))
+dat$Annotation<-factor(dat$Annotation,levels=c("Other",
+                                               "Coenzyme transport and metabolism",
+                                               "Carbohydrate transport and metabolism",
+                                               "Transcription",
+                                               "Amino acid transport and metabolism",
+                                               "Posttranslational modification, protein turnover, chaperones",
+                                               "General function prediction only",
+                                               "Energy production and conversion",
+                                               "Translation, ribosomal structure and biogenesis",
+                                               "Signal transduction mechanisms",
+                                               "Inorganic ion transport and metabolism"))
+datS<-subset(dat, dat$Sample_Type=="Soil")
+ggplot(datS, aes(x=Treatment, y=Abundance, fill=Annotation)) +
+  geom_bar(stat = "identity",position = "fill",color = "NA") +
+  scale_fill_manual(values = c(
+    "Inorganic ion transport and metabolism"="#4d5b6a"
+    ,"Coenzyme transport and metabolism"="#6a90b4"
+    ,"Cell wall/membrane/envelope biogenesis" ="#599ec4"
+    ,"Transcription"="#8d8089"
+    ,"Posttranslational modification, protein turnover, chaperones"="#427e83"
+    ,"Cell motility"="#686a47"
+    ,"Translation, ribosomal structure and biogenesis"="#cb9e59"
+    ,"Signal transduction mechanisms"="#ecc363"
+    ,"Energy production and conversion"="#a04344"
+    ,"Amino acid transport and metabolism"="#bf7a8f"
+    ,"General function prediction only"="#919f70"
+    ,"Other"="#e5e0db"
+    ,"Carbohydrate transport and metabolism"="#d65f3d" #Charlotte's Locks
+  ))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("Relative_Abun_category_bacteria_Soil.jpg",width=4,height =8)
+dat <- tax_f
+dat$Annotation <- as.character(dat$Annotation)
+unique(dat$Annotation)
+genus_abunf <- dat %>%
+  group_by(Annotation) %>%
+  summarize(Abundance = sum(Abundance)) %>%
+  arrange(Abundance)
+genus_abunf
+unique(genus_abunf$Annotation[genus_abunf$Abundance < 62000])
+dat$Annotation[dat$Annotation=="Cytoskeleton"]<-"Other"
+dat$Annotation[dat$Annotation=="Nuclear structure"]<-"Other"
+dat$Annotation[dat$Annotation=="RNA processing and modification"]<-"Other"
+dat$Annotation[dat$Annotation=="Defense mechanisms"]<-"Other"
+dat$Annotation[dat$Annotation=="Cell motility"]<-"Other"
+dat$Annotation[dat$Annotation=="Cell cycle control, cell division, chromosome partitioning"]<-"Other"
+dat$Annotation[dat$Annotation=="Chromatin structure and dynamics"]<-"Other"
+dat$Annotation[dat$Annotation=="Nucleotide transport and metabolism"]<-"Other"
+dat$Annotation[dat$Annotation=="Secondary metabolites biosynthesis, transport and catabolism"]<-"Other"
+dat$Annotation[dat$Annotation=="Intracellular trafficking, secretion, and vesicular transport"]<-"Other"
+dat$Annotation[dat$Annotation=="Lipid transport and metabolism"]<-"Other"
+dat$Annotation[dat$Annotation=="Replication, recombination and repair"]<-"Other"
+dat$Annotation[dat$Annotation=="Cell wall/membrane/envelope biogenesis"]<-"Other"
+dat$Annotation[dat$Annotation=="Function unknown"]<-"Other"
+dat$Annotation[dat$Annotation=="Carbohydrate transport and metabolism"]<-"Other"
+unique(reorder(dat$Annotation,dat$Abundance))
+dat$Annotation<-factor(dat$Annotation,levels=c("Other",
+                                               "Coenzyme transport and metabolism",
+                                               "Carbohydrate transport and metabolism",
+                                               "Transcription",
+                                               "Amino acid transport and metabolism",
+                                               "Posttranslational modification, protein turnover, chaperones",
+                                               "General function prediction only",
+                                               "Energy production and conversion",
+                                               "Translation, ribosomal structure and biogenesis",
+                                               "Signal transduction mechanisms",
+                                               "Inorganic ion transport and metabolism"))
+datS<-subset(dat, dat$Sample_Type=="Soil")
+ggplot(datS, aes(x=Treatment, y=Abundance, fill=Annotation)) +
+  geom_bar(stat = "identity",position = "fill",color = "NA") +
+  scale_fill_manual(values = c(
+    "Inorganic ion transport and metabolism"="#4d5b6a" #Stiffkey Blue
+    ,"Coenzyme transport and metabolism"="#6a90b4" #Cook's Blue
+    ,"Cell wall/membrane/envelope biogenesis" ="#599ec4" #St. Giles Blue
+    ,"Transcription"="#8d8089"#Brassica ;"#7997a1" #Stone Blue
+    ,"Posttranslational modification, protein turnover, chaperones"="#427e83" #Vardo
+    ,"Cell motility"="#686a47" #Bancha
+    ,"Translation, ribosomal structure and biogenesis"="#cb9e59" #India Yellow
+    ,"Signal transduction mechanisms"="#ecc363" #Babouche
+    ,"Energy production and conversion"="#a04344" #Incarnadine
+    ,"Amino acid transport and metabolism"="#bf7a8f" #Rangwali
+    ,"General function prediction only"="#919f70" #Yeabridge Green
+    ,"Other"="#e5e0db" #Strong White
+    ,"Carbohydrate transport and metabolism"="#d65f3d" #Charlotte's Locks
+  ))+
+theme(text=element_blank(),
+      legend.position = "none",
+      panel.grid = element_blank())
+ggsave("Relative_Abun_category_fungi_S.jpg",width=4,height =8)
+```
+
+```{r}
+##Figure S13.
+diagdds = phyloseq_to_deseq2(Soilb, ~ Till)
+# This helps to obtain the normalization factor for your dataset.
+diagdds = estimateSizeFactors(diagdds)
+# You also need to demonstrate that your dataset is effectively dispersed (?).
+diagdds = estimateDispersions(diagdds)
+# This will reduce sampling variance.
+diagvst = getVarianceStabilizedData(diagdds)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, contrast=c("Till","Conservation","Standard"), cooksCutoff = FALSE)
+sort_res <- res[order(res$padj),]
+resSig <- subset(sort_res, padj < 0.1)
+write.csv(as.data.frame(resSig), 
+          file="DET_TillSoil_DeSeq_Bacteria.csv")
+capture.output(summary(res), file = "DeSeq_TillS_Bacteria.txt")
+
+diagdds = phyloseq_to_deseq2(Soilb, ~ Cover_Crop)
+diagdds = estimateSizeFactors(diagdds)
+diagdds = estimateDispersions(diagdds)
+diagvst = getVarianceStabilizedData(diagdds)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, contrast=c("Cover_Crop","Cover-Crop","Fallow"), cooksCutoff = FALSE)
+sort_res <- res[order(res$padj),]
+resSig <- subset(sort_res, padj < 0.1)
+write.csv(as.data.frame(resSig), 
+          file="DET_CoverCropSoil_DeSeq_Bacteria.csv")
+capture.output(summary(res), file = "DeSeq_CoverCropS_Bacteria.txt")
+alpha = 0.05
+sigtab = res[which(res$padj < alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(Soilb)[rownames(sigtab), ], "matrix"))
+sigtab[sigtab==""] <- NA
+sigtab$taxa <- paste(sigtab$Phylum, sigtab$Genus, sep = "_")
+sigtab_mean <- tapply(sigtab$log2FoldChange, sigtab$taxa, mean)
+uniq <- sigtab[!duplicated(sigtab$taxa),]
+uniq$Phylum <- as.character(uniq$Phylum)
+uniq$Genus <- as.character(uniq$Genus)
+uniq_ordered <- uniq[order(uniq$log2FoldChange),]
+uniq_ordered$name <- paste(rownames(uniq),uniq$log2FoldChange,uniq$taxa,sep="_")
+# Get tables for only the enriched or depleted taxa.
+CCSoil_b_depleted <- uniq[uniq$log2FoldChange < 0.00,]
+CCSoil_b_enriched <- uniq[uniq$log2FoldChange > 0.00,]
+data<-read.table("DET_Till_DeSeq_Bacteria.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/9016) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/11385)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:20) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[21]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_Till_bacteria.txt",sep="\t",append=TRUE)
+  }}
+for(i in 1:20) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[21]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_Till_bacteria.txt",sep="\t",append=TRUE)
+  }}
+UP <- read.table(file="phyper_Enrichment_Till_bacteria.txt",sep="\t")
+f <-merge(fin2,UP,by.x="Annotation",by.y="V2")
+DOWN <- read.table(file="phyper_Depletion_Till_bacteria.txt",sep="\t")
+n <-merge(fin2,DOWN,by.x="Annotation",by.y="V2")
+
+diagdds = phyloseq_to_deseq2(Soilf, ~ Till)
+diagdds = estimateSizeFactors(diagdds)
+diagdds = estimateDispersions(diagdds)
+diagvst = getVarianceStabilizedData(diagdds)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, contrast=c("Till","Conservation","Standard"), cooksCutoff = FALSE)
+sort_res <- res[order(res$padj),]
+resSig <- subset(sort_res, padj < 0.1)
+write.csv(as.data.frame(resSig), 
+          file="DET_TillSoil_DeSeq_Fungi.csv")
+capture.output(summary(res), file = "DeSeq_TillS_Fungi.txt")
+
+diagdds = phyloseq_to_deseq2(Soilf, ~ Cover_Crop)
+diagdds = estimateSizeFactors(diagdds)
+diagdds = estimateDispersions(diagdds)
+diagvst = getVarianceStabilizedData(diagdds)
+diagdds = DESeq(diagdds, test="Wald", fitType="parametric")
+res = results(diagdds, contrast=c("Cover_Crop","Cover-Crop","Fallow"), cooksCutoff = FALSE)
+sort_res <- res[order(res$padj),]
+resSig <- subset(sort_res, padj < 0.1)
+write.csv(as.data.frame(resSig), 
+          file="DET_CoverCropSoil_DeSeq_Fungi.csv")
+capture.output(summary(res), file = "DeSeq_CoverCropS_Fungi.txt")
+alpha = 0.05
+sigtab = res[which(res$padj < alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(Soilf)[rownames(sigtab), ], "matrix"))
+sigtab[sigtab==""] <- NA
+sigtab$taxa <- paste(sigtab$Phylum, sigtab$Genus, sep = "_")
+sigtab_mean <- tapply(sigtab$log2FoldChange, sigtab$taxa, mean)
+uniq <- sigtab[!duplicated(sigtab$taxa),]
+uniq$Phylum <- as.character(uniq$Phylum)
+uniq$Genus <- as.character(uniq$Genus)
+uniq_ordered <- uniq[order(uniq$log2FoldChange),]
+uniq_ordered$name <- paste(rownames(uniq),uniq$log2FoldChange,uniq$taxa,sep="_")
+# Get tables for only the enriched or depleted taxa.
+CCSoil_f_depleted <- uniq[uniq$log2FoldChange < 0.00,]
+CCSoil_f_enriched <- uniq[uniq$log2FoldChange > 0.00,]
+
+data<-read.table("DET_TillSoil_DeSeq_Bacteria.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/29141) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/21620)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:22) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[23]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_TillSoil_bacteria.txt",sep="\t",append=TRUE)}
+}
+for(i in 1:22) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[23]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_TillSoil_bacteria.txt",sep="\t",append=TRUE)}
+}
+UP <- read.table(file="phyper_Enrichment_TillSoil_bacteria.txt",sep="\t")
+f <-merge(fin2,UP,by.x="Annotation",by.y="V2")
+DOWN <- read.table(file="phyper_Depletion_TillSoil_bacteria.txt",sep="\t")
+n <-merge(fin2,DOWN,by.x="Annotation",by.y="V2")
+ggplot(fin2, aes(x=reorder(Annotation,FoldEnrichment), y=FoldEnrichment)) +
+  theme_bw()+
+  geom_point(pch=21, size=4,fill="blue") +
+  ylab("Fold Enrichment")+
+  xlab("COG Annotation")+
+  theme(axis.text.x=element_text(size=12,color="black",face="bold",angle=90), 
+        axis.text.y=element_text(size=12,color="black",face="bold"), 
+        axis.title=element_text(size=12,face="bold"),text=element_text(size=11))+
+  theme(legend.text = element_text(colour="black", size = 12, face = "bold"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black")) +
+  geom_hline(aes(yintercept=1),colour="Black",size=2,linetype="dashed")+
+  theme(strip.text = element_text(size=11,face="bold"))+
+  ggtitle("Fold Enrichment for Conservation vs. Standard Tilling in Soil for Bacterial Transcripts") +
+  geom_point(data=f, fill="red",pch=21, size=4) +
+  coord_flip() 
+ggsave("EnrichmentAnalysis_Till_bacteria_S.jpg",width=16,height =7)
+
+data<-read.table("DET_TillSoil_DeSeq_Fungi.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/11155) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/9476)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:21) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[22]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_Till_fungi.txt",sep="\t",append=TRUE)}
+}
+for(i in 1:21) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[22]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_Till_fungi.txt",sep="\t",append=TRUE)}
+}
+UP <- read.table(file="phyper_Enrichment_Till_fungi.txt",sep="\t")
+f <-merge(fin2,UP,by.x="Annotation",by.y="V2")
+DOWN <- read.table(file="phyper_Depletion_Till_fungi.txt",sep="\t")
+n <-merge(fin2,DOWN,by.x="Annotation",by.y="V2")
+ggplot(fin2, aes(x=reorder(Annotation,FoldEnrichment), y=FoldEnrichment)) +
+  theme_bw()+
+  geom_point(pch=21, size=4,fill="blue") +
+  ylab("Fold Enrichment")+
+  xlab("COG Annotation")+
+  theme(axis.text.x=element_text(size=12,color="black",face="bold",angle=90), 
+        axis.text.y=element_text(size=12,color="black",face="bold"), 
+        axis.title=element_text(size=12,face="bold"),text=element_text(size=11))+
+  theme(legend.text = element_text(colour="black", size = 12, face = "bold"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black")) +
+  geom_hline(aes(yintercept=1),colour="Black",size=2,linetype="dashed")+
+  theme(strip.text = element_text(size=11,face="bold"))+
+  ggtitle("Fold Enrichment for Conservation vs. Standard Tilling in Soil for Fungal Transcripts") +
+  geom_point(data=f, fill="red",pch=21, size=4) +
+  coord_flip() 
+ggsave("EnrichmentAnalysis_Till_fungi_S.jpg",width=16,height =7)
+```
+
+```{r}
+##Figure S14.
+data<-read.table("DET_Till_DeSeq_Bacteria.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/9016) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/11385)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:20) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[21]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_Till_bacteria.txt",sep="\t",append=TRUE)
+  }}
+for(i in 1:20) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[21]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_Till_bacteria.txt",sep="\t",append=TRUE)
+  }}
+DOWN <- read.table(file="phyper_Depletion_Till_bacteria.txt",sep="\t")
+n <-merge(fin2,DOWN,by.x="Annotation",by.y="V2")
+ggplot(fin2, aes(x=reorder(Annotation,FoldDepletion), y=FoldDepletion)) +
+  theme_bw()+
+  geom_point(pch=21, size=4,fill="blue") +
+  ylab("Fold Depletion")+
+  xlab("COG Annotation")+
+  theme(axis.text.x=element_text(size=12,color="black",face="bold",angle=90), 
+        axis.text.y=element_text(size=12,color="black",face="bold"), 
+        axis.title=element_text(size=12,face="bold"),text=element_text(size=11))+
+  theme(legend.text = element_text(colour="black", size = 12, face = "bold"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black")) +
+  geom_hline(aes(yintercept=1),colour="Black",size=2,linetype="dashed")+
+  theme(strip.text = element_text(size=11,face="bold"))+
+  ggtitle("Fold Depletion for Conservation vs. Standard Tilling in the Rhizosphere for Bacterial Transcripts") +
+  geom_point(data=n, fill="red",pch=21, size=4) +
+  coord_flip() 
+ggsave("DepletionAnalysis_Till_bacteria_Rh.jpg",width=16,height =7)
+
+data<-read.table("DET_CoverCrop_DeSeq_Bacteria.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/805) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/1610)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:13) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[14]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_CC_bacteria.txt",sep="\t",append=TRUE)}
+}
+for(i in 1:13) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[14]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_CC_bacteria.txt",sep="\t",append=TRUE)}
+}
+DOWN <- read.table(file="phyper_Depletion_CC_bacteria.txt",sep="\t")
+n <-merge(fin2,DOWN,by.x="Annotation",by.y="V2")
+ggplot(fin2, aes(x=reorder(Annotation,FoldDepletion), y=FoldDepletion)) +
+  theme_bw()+
+  geom_point(pch=21, size=4,fill="blue") +
+  ylab("Fold Depletion")+
+  xlab("COG Annotation")+
+  theme(axis.text.x=element_text(size=12,color="black",face="bold",angle=90), 
+        axis.text.y=element_text(size=12,color="black",face="bold"), 
+        axis.title=element_text(size=12,face="bold"),text=element_text(size=11))+
+  theme(legend.text = element_text(colour="black", size = 12, face = "bold"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black")) +
+  geom_hline(aes(yintercept=1),colour="Black",size=2,linetype="dashed")+
+  theme(strip.text = element_text(size=11,face="bold"))+
+  ggtitle("Fold Depletion for Cover-Crop vs. Fallow in the Rhizosphere for Bacteria Transcripts") +
+  geom_point(data=n, fill="red",pch=21, size=4) +
+  coord_flip() 
+ggsave("DepletionAnalysis_CC_bacteria_Rh.jpg",width=16,height =7)
+
+data<-read.table("DET_TillSoil_DeSeq_Bacteria.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/29141) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/21620)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:22) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[23]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_TillSoil_bacteria.txt",sep="\t",append=TRUE)}
+}
+for(i in 1:22) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[23]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_TillSoil_bacteria.txt",sep="\t",append=TRUE)}
+}
+DOWN <- read.table(file="phyper_Depletion_TillSoil_bacteria.txt",sep="\t")
+n <-merge(fin2,DOWN,by.x="Annotation",by.y="V2")
+ggplot(fin2, aes(x=reorder(Annotation,FoldDepletion), y=FoldDepletion)) +
+  theme_bw()+
+  geom_point(pch=21, size=4,fill="blue") +
+  ylab("Fold Depletion")+
+  xlab("COG Annotation")+
+  theme(axis.text.x=element_text(size=12,color="black",face="bold",angle=90), 
+        axis.text.y=element_text(size=12,color="black",face="bold"), 
+        axis.title=element_text(size=12,face="bold"),text=element_text(size=11))+
+  theme(legend.text = element_text(colour="black", size = 12, face = "bold"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black")) +
+  geom_hline(aes(yintercept=1),colour="Black",size=2,linetype="dashed")+
+  theme(strip.text = element_text(size=11,face="bold"))+
+  ggtitle("Fold Depletion for Conservation vs. Standard Tilling in Soil for Bacterial Transcripts") +
+  geom_point(data=n, fill="red",pch=21,size=4) +
+  coord_flip() 
+ggsave("DepletionAnalysis_Till_bacteria_S.jpg",width=16,height =7)
+
+data<-read.table("DET_CoverCrop_DeSeq_Fungi.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/276) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/414)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:6) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[7]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_CC_fungi_Rh.txt",sep="\t",append=TRUE)}
+}
+for(i in 1:6) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[7]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_CC_fungi_Rh.txt",sep="\t",append=TRUE)}
+}
+DOWN <- read.table(file="phyper_Depletion_CC_fungi_Rh.txt",sep="\t")
+n <-merge(fin2,DOWN,by.x="Annotation",by.y="V2")
+ggplot(fin2, aes(x=reorder(Annotation,FoldDepletion), y=FoldDepletion)) +
+  theme_bw()+
+  geom_point(pch=21, size=4,fill="blue") +
+  ylab("Fold Depletion")+
+  xlab("COG Annotation")+
+  theme(axis.text.x=element_text(size=12,color="black",face="bold",angle=90), 
+        axis.text.y=element_text(size=12,color="black",face="bold"), 
+        axis.title=element_text(size=12,face="bold"),text=element_text(size=11))+
+  theme(legend.text = element_text(colour="black", size = 12, face = "bold"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black")) +
+  geom_hline(aes(yintercept=1),colour="Black",size=2,linetype="dashed")+
+  theme(strip.text = element_text(size=11,face="bold"))+
+  ggtitle("Fold Depletion for Cover-Crop vs. Fallow in the Rhizosphere for Fungal Transcripts") +
+  geom_point(data=n, fill="red",pch=21,size=4) +
+  coord_flip() 
+ggsave("DepletionAnalysis_CC_fungal_Rh.jpg",width=16,height =7)
+
+data<-read.table("DET_TillSoil_DeSeq_Fungi.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/11155) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/9476)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:21) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[22]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_Till_fungi.txt",sep="\t",append=TRUE)}
+}
+for(i in 1:21) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[22]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_Till_fungi.txt",sep="\t",append=TRUE)}
+}
+UP <- read.table(file="phyper_Enrichment_Till_fungi.txt",sep="\t")
+f <-merge(fin2,UP,by.x="Annotation",by.y="V2")
+DOWN <- read.table(file="phyper_Depletion_Till_fungi.txt",sep="\t")
+n <-merge(fin2,DOWN,by.x="Annotation",by.y="V2")
+ggplot(fin2, aes(x=reorder(Annotation,FoldDepletion), y=FoldDepletion)) +
+  theme_bw()+
+  geom_point(pch=21, size=4,fill="blue") +
+  ylab("Fold Depletion")+
+  xlab("COG Annotation")+
+  theme(axis.text.x=element_text(size=12,color="black",face="bold",angle=90), 
+        axis.text.y=element_text(size=12,color="black",face="bold"), 
+        axis.title=element_text(size=12,face="bold"),text=element_text(size=11))+
+  theme(legend.text = element_text(colour="black", size = 12, face = "bold"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black")) +
+  geom_hline(aes(yintercept=1),colour="Black",size=2,linetype="dashed")+
+  theme(strip.text = element_text(size=11,face="bold"))+
+  ggtitle("Fold Depletion for Conservation vs. Standard Tilling in Soil for Fungal Transcripts") +
+  geom_point(data=n, fill="red",pch=21, size=4) +
+  coord_flip() 
+ggsave("DepletionAnalysis_Till_fungal_S.jpg",width=16,height =7)
+
+data<-read.table("DET_Till_DeSeq_Fungi.csv",header=T,sep=",")
+data[["Value"]] = ifelse(data[["log2FoldChange"]] >= 0, "Up", "Down")
+new <- merge(data, agg1, by.x="X", by.y="Contig")[,c(1:9,11)]
+n2 <- merge(new,cog_ano,by="Symbol")[,c(1:10,12)]
+colnames(new)
+Up_n <- subset(n2, n2$Value=="Up")
+Down_n <- subset(n2, n2$Value=="Down")
+#Count DET for each category & make new table that has amount of total genes in each category, total DEG in each category, and then percentages of DEG/Total
+upcount_n <- Up_n %>% group_by(Symbol) %>% tally 
+colnames(upcount_n)[2]<-"CountsUp_DET"
+downcount_n <- Down_n %>% group_by(Symbol) %>% tally 
+colnames(downcount_n)[2]<-"CountsDown_DET"
+fin<- merge(upcount_n,downcount_n, by="Symbol") %>% adorn_totals("row") %>% 
+  mutate(p_TotalDETs_Up_perAnnotation = CountsUp_DET/3174) %>%
+  mutate(p_TotalDETs_Down_perAnnotation = CountsDown_DET/4094)
+##Count total number of genes found in each sample
+da <- data_ano %>% group_by(Symbol) %>%
+  summarise(Totals_perAnnotation = sum(sum,na.rm=T)) %>% adorn_totals("row") %>% 
+  mutate(p_Totals_perAnnotation = Totals_perAnnotation/119616868.13) 
+hm <- merge(da,fin,by="Symbol")
+fin2<-merge(hm,cog_ano,by="Symbol")[,c(1:7,9)] %>% mutate(FoldEnrichment=p_TotalDETs_Up_perAnnotation/p_Totals_perAnnotation) %>%
+  mutate(FoldDepletion=p_TotalDETs_Down_perAnnotation/p_Totals_perAnnotation)
+for(i in 1:19) {
+  test<-phyper((fin2$CountsUp_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsUp_DET[20]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Enrichment_Till_fungi.txt",sep="\t",append=TRUE)}
+}
+for(i in 1:19) {
+  test<-phyper((fin2$CountsDown_DET[i]-1),fin2$Totals_perAnnotation[i],(da$Totals_perAnnotation[25] - fin2$Totals_perAnnotation[i]),(fin$CountsDown_DET[20]),lower.tail=FALSE)
+  if (test <= 0.05) {cat(test,as.character(fin2$Annotation[i]),fill=TRUE,file="phyper_Depletion_Till_fungi.txt",sep="\t",append=TRUE)}
+}
+UP <- read.table(file="phyper_Enrichment_Till_fungi.txt",sep="\t")
+f <-merge(fin2,UP,by.x="Annotation",by.y="V2")
+DOWN <- read.table(file="phyper_Depletion_Till_fungi.txt",sep="\t")
+n <-merge(fin2,DOWN,by.x="Annotation",by.y="V2")
+ggplot(fin2, aes(x=reorder(Annotation,FoldDepletion), y=FoldDepletion)) +
+  theme_bw()+
+  geom_point(pch=21, size=4,fill="blue") +
+  ylab("Fold Depletion")+
+  xlab("COG Annotation")+
+  theme(axis.text.x=element_text(size=12,color="black",face="bold",angle=90), 
+        axis.text.y=element_text(size=12,color="black",face="bold"), 
+        axis.title=element_text(size=12,face="bold"),text=element_text(size=11))+
+  theme(legend.text = element_text(colour="black", size = 12, face = "bold"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black")) +
+  geom_hline(aes(yintercept=1),colour="Black",size=2,linetype="dashed")+
+  theme(strip.text = element_text(size=11,face="bold"))+
+  ggtitle("Fold Depletion for Conservation vs. Standard Tilling in the Rhizosphere for Fungal Transcripts") +
+  geom_point(data=n, fill="red",pch=21, size=4) +
+  coord_flip() 
+ggsave("DepletionAnalysis_Till_fungi_Rh.jpg",width=16,height =7)
+```
+
+```{r}
+##Figure S15.
+hRb <- bush_b
+w=get_indicators(hRb,"Treatment")
+sample_data(hRb)$Treatment
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hRb)[w$sig.indvals$OTU, ], "matrix"))
+c_tax <- sigtab
+write.table(c_tax,"MTb_TreatmentIndicators.csv",sep=",")
+hRb <- bush_f
+w=get_indicators(hRb,"Treatment")
+sample_data(hRb)$Treatment
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hRb)[w$sig.indvals$OTU, ], "matrix"))
+c_tax <- sigtab
+write.table(c_tax,"MTf_TreatmentIndicators.csv",sep=",")
+hRb <- bush_b
+w=get_indicators(hRb,"Till_Type")
+sample_data(hRb)$Till_Type
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hRb)[w$sig.indvals$OTU, ], "matrix"))
+c_tax <- sigtab
+write.table(c_tax,"MTb_TillIndicators.csv",sep=",")
+hRb <- bush_f
+w=get_indicators(hRb,"Till_Type")
+sample_data(hRb)$Till_Type
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hRb)[w$sig.indvals$OTU, ], "matrix"))
+c_tax <- sigtab
+write.table(c_tax,"MTf_TillIndicators.csv",sep=",")
+hRb <- bush_b
+w=get_indicators(hRb,"Cover_Type")
+sample_data(hRb)$Cover_Type
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hRb)[w$sig.indvals$OTU, ], "matrix"))
+c_tax <- sigtab
+write.table(c_tax,"MTb_CoverIndicators.csv",sep=",")
+hRb <- bush_f
+w=get_indicators(hRb,"Cover_Type")
+sample_data(hRb)$Cover_Type
+sigtab = cbind(as(w$sig.indvals, "data.frame"), as(tax_table(hRb)[w$sig.indvals$OTU, ], "matrix"))
+c_tax <- sigtab
+write.table(c_tax,"MTf_CoverIndicators.csv",sep=",")
+###a.
+phy_in <- read.csv("MTb_TillIndicators.csv")
+phy_int<-merge(mapKtoG, phy_in, by.y="Tree.node.ID",by.x="target_id")
+phy_int<-merge(phy_int,aid,by.y="target_id1",by.x="gene_names")
+nrow(phy_int)==length(unique(phy_int$target_id))
+phy_int<-phy_int[!duplicated(phy_int$target_id), ]
+phy_int<-merge(phy_int,ano,by.y="Contig",by.x="target_id2",all.x=TRUE)
+nrow(phy_int)==length(unique(phy_int$target_id))
+phy_int<-phy_int[!duplicated(phy_int$target_id), ]
+phy_in$count="1"
+c_phy_in <- subset(phy_in, Label%in%c("Conservation_Till","Standard_Till"))
+c_phy_in$count <- as.numeric(c_phy_in$count)
+unique(phy_in$Phylum)
+c_phy_in[c_phy_in$Phylum=="Candidatus",]
+c_phy_in$Phylum<-factor(c_phy_in$Phylum,levels=c("Proteobacteria","Actinobacteria","Bacteroidetes","Firmicutes","Chloroflexi","Cyanobacteria","Planctomycetes", "Acidobacteria","Nitrospirae","Verrucomicrobia","Deinococcus-Thermus","Gemmatimonadetes","Poribacteria","Armatimonadetes","Aquificae","Spirochaetes","Nitrospinae","Candidatus", "Chlamydiae", "Aminicenantes","Deferribacteres","Tenericutes"))
+abunplot <- ggplot(data=c_phy_in, aes(x=Phylum, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") +
+  scale_fill_manual(values = c("Conservation_Till" = "#6e976a",
+                               "Standard_Till" = "#704885"))+
+  coord_flip()+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+newgraph
+ggsave("MTb_TillIndicators_Phylum.jpg",newgraph,width=7,height =5)
+###b.
+mapKtoG<-read.delim2("map.txt")
+head(mapKtoG)
+head(ano)
+phy_in <- read.csv("MTb_TreatmentIndicators.csv")
+phy_int<-merge(mapKtoG, phy_in, by.y="Tree.node.ID",by.x="target_id")
+aid <- read.csv("new_combo.csv")
+phy_int<-merge(phy_int,aid,by.y="target_id1",by.x="gene_names")
+nrow(phy_int)==length(unique(phy_int$target_id))
+phy_int[duplicated(phy_int$target_id), ]
+phy_int<-phy_int[!duplicated(phy_int$target_id), ]
+phy_int<-merge(phy_int,ano,by.y="Contig",by.x="target_id2",all.x=TRUE)
+nrow(phy_int)==length(unique(phy_int$target_id))
+phy_int<-phy_int[!duplicated(phy_int$target_id), ]
+c_phy_in <- subset(phy_int, Label%in%c("ctcc","ctno","stcc","stno"))
+c_phy_in$count="1"
+c_phy_in$count <- as.numeric(c_phy_in$count)
+c_phy_in[c_phy_in$Phylum=="Candidatus",]
+c_phy_in$Phylum<-factor(c_phy_in$Phylum,levels=c("Proteobacteria","Actinobacteria","Bacteroidetes","Firmicutes",
+                                                 "Chloroflexi","Cyanobacteria","Planctomycetes", "Acidobacteria","Nitrospirae","Verrucomicrobia","Deinococcus-Thermus","Gemmatimonadetes","Poribacteria","Armatimonadetes","Aquificae","Spirochaetes","Nitrospinae","Candidatus"))
+
+abunplot <- ggplot(data=c_phy_in, aes(x=Phylum, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))+
+  coord_flip()+
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.25,0.50,0.75,1))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+newgraph
+ggsave("MTb_TreatmentIndicators_Phylum.jpg",newgraph,width=7,height =5)
+###c.
+phy_in <- read.csv("MTb_CoverIndicators.csv")
+phy_int<-merge(mapKtoG, phy_in, by.y="Tree.node.ID",by.x="target_id")
+head(phy_int); nrow(phy_int)
+#aid <- read.csv("new_combo.csv")
+phy_int<-merge(phy_int,aid,by.y="target_id1",by.x="gene_names")
+head(phy_int); nrow(phy_int)
+nrow(phy_int)==length(unique(phy_int$target_id))
+phy_int<-phy_int[!duplicated(phy_int$target_id), ]
+phy_int<-merge(phy_int,ano,by.y="Contig",by.x="target_id2",all.x=TRUE)
+nrow(phy_int)==length(unique(phy_int$target_id))
+phy_int<-phy_int[!duplicated(phy_int$target_id), ]
+phy_in$count="1"
+c_phy_in <- subset(phy_in, Label%in%c("Cover_Crop","Fallow"))
+class(phy_in$count)
+c_phy_in$count <- as.numeric(c_phy_in$count)
+unique(c_phy_in$Phylum)
+c_phy_in$Phylum<-factor(c_phy_in$Phylum,levels=c("Proteobacteria","Actinobacteria","Bacteroidetes","Firmicutes","Chloroflexi","Cyanobacteria","Planctomycetes", "Acidobacteria","Nitrospirae","Verrucomicrobia","Deinococcus-Thermus","Gemmatimonadetes","Poribacteria","Armatimonadetes","Aquificae","Spirochaetes","Nitrospinae","Candidatus","Chlamydiae","Aminicenantes","Deferribacteres","Tenericutes","Hydrogenedentes"))
+c_phy_in %>% 
+  group_by(Phylum) %>%
+  summarise(no_rows = length(Phylum))
+abunplot <- ggplot(data=c_phy_in, aes(x=Phylum, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + 
+  scale_fill_manual(values = c("Cover_Crop" = "#828282", 
+                               "Fallow" = "#d0d0d0"))+
+  coord_flip()
+newgraph
+ggsave("MTb_CoverIndicators_Phylum.jpg",newgraph,width=7,height =5)
+```
+
+```{r}
+##Figure S16
+###a.
+mapKtoG<-read.delim2("map.txt")
+phy_in <- read.csv("MTb_TreatmentIndicators.csv")
+phy_int<-merge(mapKtoG, phy_in, by.y="Tree.node.ID",by.x="target_id")
+aid <- read.csv("new_combo.csv")
+phy_int<-merge(phy_int,aid,by.y="target_id1",by.x="gene_names")
+nrow(phy_int)==length(unique(phy_int$target_id))
+phy_int[duplicated(phy_int$target_id), ]
+phy_int<-phy_int[!duplicated(phy_int$target_id), ]
+phy_int<-merge(phy_int,ano,by.y="Contig",by.x="target_id2",all.x=TRUE)
+nrow(phy_int)==length(unique(phy_int$target_id))
+phy_int<-phy_int[!duplicated(phy_int$target_id), ]
+c_phy_in <- subset(phy_int, Label%in%c("ctcc","ctno","stcc","stno"))
+c_phy_in$Annotation<-factor(c_phy_in$Annotation,levels=c("No COG prediction",
+                                                         "Function unknown",
+                                                         "Translation, ribosomal structure and biogenesis",
+                                                         "General function prediction only",
+                                                         "Amino acid transport and metabolism",
+                                                         "Energy production and conversion",                         
+                                                         "Carbohydrate transport and metabolism",
+                                                         "Posttranslational modification, protein turnover, chaperones",
+                                                         "Transcription",
+                                                         "Inorganic ion transport and metabolism",
+                                                         "Signal transduction mechanisms",
+                                                         "Lipid transport and metabolism",    
+                                                         "Intracellular trafficking, secretion, and vesicular transport",
+                                                         "Coenzyme transport and metabolism",  
+                                                         "Cell wall/membrane/envelope biogenesis", 
+                                                         "Replication, recombination and repair",
+                                                         "Secondary metabolites biosynthesis, transport and catabolism", 
+                                                         "Nucleotide transport and metabolism", 
+                                                         "Cell cycle control, cell division, chromosome partitioning",
+                                                         "Defense mechanisms",  
+                                                         "Cytoskeleton",  
+                                                         "Cell motility",
+                                                         "Chromatin structure and dynamics",
+                                                         "RNA processing and modification"
+                                                         )
+)
+c_phy_in$Annotation[is.na(c_phy_in$Annotation)] = "No COG prediction"
+a<- c_phy_in %>% 
+  group_by(Annotation) %>%
+  summarise(no_rows = length(Annotation))
+abunplot <- ggplot(data=c_phy_in, aes(x=Annotation, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + 
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))+
+  coord_flip()+
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.25,0.50,0.75,1))
+ggsave("MTb_TreatmentIndicators_COG.jpg",newgraph,width=7,height =5)
+###b.
+phy_int$count="1"
+c_phy_in <- subset(phy_int, Label%in%c("Conservation_Till","Standard_Till"))
+c_phy_in$count <- as.numeric(c_phy_in$count)
+c_phy_in$Annotation<-factor(c_phy_in$Annotation,levels=c("No COG prediction",
+                                                         "Function unknown",
+                                                         "Translation, ribosomal structure and biogenesis",
+                                                         "General function prediction only",
+                                                         "Amino acid transport and metabolism",
+                                                         "Energy production and conversion",
+                                                         "Carbohydrate transport and metabolism",
+                                                         "Posttranslational modification, protein turnover, chaperones",
+                                                         "Transcription",
+                                                         "Inorganic ion transport and metabolism",
+                                                         "Signal transduction mechanisms",
+                                                         "Lipid transport and metabolism",
+                                                         "Intracellular trafficking, secretion, and vesicular transport",
+                                                         "Coenzyme transport and metabolism",
+                                                         "Cell wall/membrane/envelope biogenesis", 
+                                                         "Replication, recombination and repair",
+                                                         "Secondary metabolites biosynthesis, transport and catabolism", 
+                                                         "Nucleotide transport and metabolism", 
+                                                         "Cell cycle control, cell division, chromosome partitioning",
+                                                         "Defense mechanisms",
+                                                         "Cytoskeleton",
+                                                         "Cell motility",
+                                                         "Chromatin structure and dynamics",
+                                                         "RNA processing and modification")
+                            )
+c_phy_in$Annotation[is.na(c_phy_in$Annotation)] = "No COG prediction"
+
+abunplot <- ggplot(data=c_phy_in, aes(x=Annotation, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") +
+  scale_fill_manual(values = c("Conservation_Till" = "#233f22", 
+                               "Standard_Till" = "#3c0958"))+
+  coord_flip()+
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.25,0.50,0.75,1))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+newgraph
+ggsave("MTb_TillIndicators_COG.jpg",newgraph,width=7,height =5)
+###c.
+#phy_in <- read.csv("MTb_CoverIndicators.csv")
+#phy_int<-merge(mapKtoG, phy_in, by.y="Tree.node.ID",by.x="target_id")
+#aid <- read.csv("new_combo.csv")
+#phy_int<-merge(phy_int,aid,by.y="target_id1",by.x="gene_names")
+#phy_int$count="1"
+c_phy_in <- subset(phy_int, Label%in%c("Cover_Crop","Fallow"))
+class(phy_int$count)
+c_phy_in$count <- as.numeric(c_phy_in$count)
+c_phy_in$Annotation<-factor(c_phy_in$Annotation,levels=c("No COG prediction",
+                                                         "Function unknown",
+                                                         "Translation, ribosomal structure and biogenesis",
+                                                         "General function prediction only",
+                                                         "Amino acid transport and metabolism",
+                                                         "Energy production and conversion",                         
+                                                         "Carbohydrate transport and metabolism",
+                                                         "Posttranslational modification, protein turnover, chaperones",
+                                                         "Transcription",
+                                                         "Inorganic ion transport and metabolism",
+                                                         "Signal transduction mechanisms",
+                                                         "Lipid transport and metabolism",    
+                                                         "Intracellular trafficking, secretion, and vesicular transport",
+                                                         "Coenzyme transport and metabolism",  
+                                                         "Cell wall/membrane/envelope biogenesis", 
+                                                         "Replication, recombination and repair",
+                                                         "Secondary metabolites biosynthesis, transport and catabolism", 
+                                                         "Nucleotide transport and metabolism", 
+                                                         "Cell cycle control, cell division, chromosome partitioning",
+                                                         "Defense mechanisms",  
+                                                         "Cytoskeleton",  
+                                                         "Cell motility",
+                                                         "Chromatin structure and dynamics",
+                                                         "RNA processing and modification")
+)
+c_phy_in$Annotation[is.na(c_phy_in$Annotation)] = "No COG prediction"
+r<- c_phy_in %>% 
+  group_by(Annotation) %>%
+  summarise(no_rows = length(Annotation))
+abunplot <- ggplot(data=c_phy_in, aes(x=Annotation, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + 
+  scale_fill_manual(values = c("Cover_Crop" = "#828282", 
+                               "Fallow" = "#d0d0d0"))+
+  coord_flip()+
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.25,0.50,0.75,1))
+newgraph
+ggsave("MTb_CoverIndicators_COG.jpg",newgraph,width=7,height =5)
+```
+
+```{r}
+##Figure S17.
+###a.
+mapKtoG<-read.delim2("map.txt")
+phy_in <- read.csv("MTf_TreatmentIndicators.csv")
+phy_int<-merge(mapKtoG, phy_in, by.y="Tree.node.ID",by.x="target_id")
+aid <- read.csv("new_combo.csv")
+colnames(aid)
+phy_int<-merge(phy_int,aid,by.y="target_id1",by.x="gene_names")
+nrow(phy_int)==length(unique(phy_int$Tree.node.ID))
+phy_int[duplicated(phy_int$Tree.node.ID), ]
+phy_int<-phy_int[!duplicated(phy_int$Tree.node.ID), ]
+phy_int<-merge(phy_int,ano,by.y="Contig",by.x="target_id2",all.x=TRUE)
+nrow(phy_int)==length(unique(phy_int$Tree.node.ID))
+phy_int<-phy_int[!duplicated(phy_int$Tree.node.ID), ]
+#phy_in<-subset.data.frame(phy_in,phy_in$Phylum != "unclassified")
+#phy_in <- phy_in[,c(2,6,12)]
+c_phy_in <- subset(phy_int, Label%in%c("ctcc","ctno","stcc","stno"))
+c_phy_in$count <- as.numeric(c_phy_in$count)
+c_phy_in$Phylum<-factor(c_phy_in$Phylum,levels=c("Blastocladiomycota","Chytridiomycota","Zoopagomycota","Mucoromycota","Basidiomycota","Ascomycota"))
+c_phy_in %>% 
+  group_by(Phylum) %>%
+  summarise(no_rows = length(Phylum))
+abunplot <- ggplot(data=c_phy_in, aes(x=Phylum, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") +
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                                 "ctno" = "#97fc97",
+                                 "stcc" = "#67238b",
+                                 "stno" = "#ab82ff"))+
+  coord_flip()+
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.25,0.50,0.75,1))
+newgraph
+ggsave("MTf_TreatmentIndicators_Phylum.jpg",newgraph,width=7,height =5)
+###b.
+phy_in <- read.csv("MTf_TillIndicators.csv")
+phy_int<-merge(mapKtoG, phy_in, by.y="Tree.node.ID",by.x="target_id")
+aid <- read.csv("new_combo.csv")
+colnames(aid)
+phy_int<-merge(phy_int,aid,by.y="target_id1",by.x="gene_names")
+nrow(phy_int)==length(unique(phy_int$target_id))
+phy_int<-phy_int[!duplicated(phy_int$target_id), ]
+phy_int<-merge(phy_int,ano,by.y="Contig",by.x="target_id2",all.x=TRUE)
+nrow(phy_int)==length(unique(phy_int$target_id))
+phy_int<-phy_int[!duplicated(phy_int$target_id), ]
+phy_in$count="1"
+c_phy_in <- subset(phy_in, Label%in%c("Conservation_Till","Standard_Till"))
+c_phy_in$count <- as.numeric(c_phy_in$count)
+c_phy_in$Phylum<-factor(c_phy_in$Phylum,levels=c("Blastocladiomycota","Chytridiomycota","Zoopagomycota","Mucoromycota","Basidiomycota","Ascomycota"))
+
+abunplot <- ggplot(data=c_phy_in, aes(x=Phylum, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") +
+  scale_fill_manual(values =c("Conservation_Till" = "#6e976a",# "#233f22"
+                               "Standard_Till" = "#704885"))+ # "#3c0958"
+  coord_flip()+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+newgraph
+ggsave("MTf_TillIndicators_Phylum.jpg",newgraph,width=7,height =5)
+###c.
+mapKtoG<-read.delim2("map.txt")
+phy_in <- read.csv("MTf_CoverIndicators.csv")
+phy_int<-merge(mapKtoG, phy_in, by.y="Tree.node.ID",by.x="target_id")
+aid <- read.csv("new_combo.csv")
+colnames(aid)
+phy_int<-merge(phy_int,aid,by.y="target_id1",by.x="gene_names")
+nrow(phy_int)==length(unique(phy_int$target_id))
+phy_int<-phy_int[!duplicated(phy_int$target_id), ]
+phy_int<-merge(phy_int,ano,by.y="Contig",by.x="target_id2",all.x=TRUE)
+nrow(phy_int)==length(unique(phy_int$target_id))
+phy_int<-phy_int[!duplicated(phy_int$target_id), ]
+phy_in$count="1"
+c_phy_in <- subset(phy_in, Label%in%c("Cover_Crop","Fallow"))
+class(phy_in$count)
+c_phy_in$count <- as.numeric(c_phy_in$count)
+unique(c_phy_in$Phylum)
+c_phy_in$Phylum<-factor(c_phy_in$Phylum,levels=c("Blastocladiomycota","Chytridiomycota","Zoopagomycota","Mucoromycota","Basidiomycota","Ascomycota"))
+c_phy_in %>% 
+  group_by(Phylum) %>%
+  summarise(no_rows = length(Phylum))
+abunplot <- ggplot(data=c_phy_in, aes(x=Phylum, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + 
+  scale_fill_manual(values = c("Cover_Crop" = "#828282", 
+                               "Fallow" = "#d0d0d0"))+
+  coord_flip()+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+newgraph
+ggsave("MTf_CoverIndicators_Phylum.jpg",newgraph,width=7,height =5)
+```
+
+```{r}
+##Figure S18.
+###a.
+mapKtoG<-read.delim2("MTmap.txt")
+phy_in <- read.csv("MTf_TreatmentIndicators.csv")
+phy_int<-merge(mapKtoG, phy_in, by.y="Tree.node.ID",by.x="target_id")
+aid <- read.csv("new_combo.csv")
+phy_int<-merge(phy_int,aid,by.y="target_id1",by.x="gene_names")
+nrow(phy_int)==length(unique(phy_int$Tree.node.ID))
+phy_int[duplicated(phy_int$Tree.node.ID), ]
+phy_int<-phy_int[!duplicated(phy_int$Tree.node.ID), ]
+phy_int<-merge(phy_int,ano,by.y="Contig",by.x="target_id2",all.x=TRUE)
+nrow(phy_int)==length(unique(phy_int$Tree.node.ID))
+phy_int<-phy_int[!duplicated(phy_int$Tree.node.ID), ]
+c_phy_in <- subset(phy_int, Label%in%c("ctcc","ctno","stcc","stno"))
+phy_int$count="1"
+c_phy_in$Annotation<-factor(c_phy_in$Annotation,levels=c("Function unknown",
+                                                         "Transcription",
+                                                         "Intracellular trafficking, secretion, and vesicular transport",
+                                                         "Translation, ribosomal structure and biogenesis",              
+                                                         "General function prediction only",                           
+                                                         "Coenzyme transport and metabolism",                            
+                                                         "Secondary metabolites biosynthesis, transport and catabolism", 
+                                                         "Lipid transport and metabolism",                               
+                                                         "Amino acid transport and metabolism",                          
+                                                         "Energy production and conversion",                             
+                                                         "Inorganic ion transport and metabolism",                       
+                                                         "RNA processing and modification",                              
+                                                         "Posttranslational modification, protein turnover, chaperones", 
+                                                         "Replication, recombination and repair",                        
+                                                         "Nucleotide transport and metabolism",                         
+                                                         "Carbohydrate transport and metabolism",                     
+                                                         "Chromatin structure and dynamics ",                            
+                                                         "Cell wall/membrane/envelope biogenesis",                       
+                                                         "Cell cycle control, cell division, chromosome partitioning",   
+                                                         "Cytoskeleton",
+                                                         "No COG prediction")
+)
+c_phy_in$Annotation[is.na(c_phy_in$Annotation)] = "No COG prediction"
+c_phy_in %>% 
+  group_by(Annotation) %>%
+  summarise(no_rows = length(Annotation))
+abunplot <- ggplot(data=c_phy_in, aes(x=Annotation, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + 
+  scale_fill_manual(values = c("ctcc" = "#548b55", 
+                               "ctno" = "#97fc97",
+                               "stcc" = "#67238b",
+                               "stno" = "#ab82ff"))+
+  coord_flip()+
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.25,0.50,0.75,1))
+ggsave("MTf_TreatmentIndicators_COG.jpg",newgraph,width=7,height =5)
+###b.
+mapKtoG<-read.delim2("MTmap.txt")
+phy_in <- read.csv("MTf_TreatmentIndicators.csv")
+phy_int<-merge(mapKtoG, phy_in, by.y="Tree.node.ID",by.x="target_id")
+aid <- read.csv("new_combo.csv")
+phy_int<-merge(phy_int,aid,by.y="target_id1",by.x="gene_names")
+nrow(phy_int)==length(unique(phy_int$Tree.node.ID))
+phy_int[duplicated(phy_int$Tree.node.ID), ]
+phy_int<-phy_int[!duplicated(phy_int$Tree.node.ID), ]
+phy_int<-merge(phy_int,ano,by.y="Contig",by.x="target_id2",all.x=TRUE)
+nrow(phy_int)==length(unique(phy_int$Tree.node.ID))
+phy_int<-phy_int[!duplicated(phy_int$Tree.node.ID), ]
+c_phy_in <- subset(phy_int, Label%in%c("ctcc","ctno","stcc","stno"))
+phy_int$count="1"
+colnames(phy_int);class(1)
+c_phy_in <- subset(phy_int, Label%in%c("Conservation_Till","Standard_Till"))
+class(phy_int$count)
+c_phy_in$count <- as.numeric(c_phy_in$count)
+unique(c_phy_in$Annotation)
+c_phy_in$Annotation<-factor(c_phy_in$Annotation,levels=c("Function unknown",
+                                                         "Transcription",
+                                                         "Intracellular trafficking, secretion, and vesicular transport",
+                                                         "Translation, ribosomal structure and biogenesis",              
+                                                         "General function prediction only",                           
+                                                         "Coenzyme transport and metabolism",                            
+                                                         "Secondary metabolites biosynthesis, transport and catabolism", 
+                                                         "Lipid transport and metabolism",                               
+                                                         "Amino acid transport and metabolism",                          
+                                                         "Energy production and conversion",                             
+                                                         "Inorganic ion transport and metabolism",                       
+                                                         "RNA processing and modification",                              
+                                                         "Posttranslational modification, protein turnover, chaperones", 
+                                                         "Replication, recombination and repair",                        
+                                                         "Nucleotide transport and metabolism",                         
+                                                         "Carbohydrate transport and metabolism",                     
+                                                         "Chromatin structure and dynamics ",                            
+                                                         "Cell wall/membrane/envelope biogenesis",                       
+                                                         "Cell cycle control, cell division, chromosome partitioning",   
+                                                         "Cytoskeleton",
+                                                         "No COG prediction",
+                                                         "Defense mechanisms",
+                                                         "Signal transduction mechanisms"))
+c_phy_in$Annotation[is.na(c_phy_in$Annotation)] = "No COG prediction"
+r<- c_phy_in %>% 
+  group_by(Annotation) %>%
+  summarise(no_rows = length(Annotation))
+
+abunplot <- ggplot(data=c_phy_in, aes(x=Annotation, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") + 
+  scale_fill_manual(values = c("Conservation_Till" = "#6e976a", 
+                                "Standard_Till" = "#704885"))+
+  coord_flip()+
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.25,0.50,0.75,1))+
+  theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("MTf_TillIndicators_COG.jpg",newgraph,width=7,height =5)
+###c.
+phy_int$count="1"
+c_phy_in <- subset(phy_int, Label%in%c("Cover_Crop","Fallow"))
+c_phy_in$count <- as.numeric(c_phy_in$count)
+c_phy_in$Annotation<-factor(c_phy_in$Annotation,levels=c("Function unknown",
+                                                         "Transcription",
+                                                         "Intracellular trafficking, secretion, and vesicular transport",
+                                                         "Translation, ribosomal structure and biogenesis",              
+                                                         "General function prediction only",                           
+                                                         "Coenzyme transport and metabolism",                            
+                                                         "Secondary metabolites biosynthesis, transport and catabolism", 
+                                                         "Lipid transport and metabolism",                               
+                                                         "Amino acid transport and metabolism",                          
+                                                         "Energy production and conversion",                             
+                                                         "Inorganic ion transport and metabolism",                       
+                                                         "RNA processing and modification",                              
+                                                         "Posttranslational modification, protein turnover, chaperones", 
+                                                         "Replication, recombination and repair",                        
+                                                         "Nucleotide transport and metabolism",                         
+                                                         "Carbohydrate transport and metabolism",                     
+                                                         "Chromatin structure and dynamics ",                            
+                                                         "Cell wall/membrane/envelope biogenesis",                       
+                                                         "Cell cycle control, cell division, chromosome partitioning",   
+                                                         "Cytoskeleton",
+                                                         "No COG prediction",
+                                                         "Defense mechanisms",
+                                                         "Signal transduction mechanisms")
+)
+c_phy_in$Annotation[is.na(c_phy_in$Annotation)] = "No COG prediction"
+r<- c_phy_in %>% 
+  group_by(Annotation) %>%
+  summarise(no_rows = length(Annotation))
+abunplot <- ggplot(data=c_phy_in, aes(x=Annotation, y=count, fill=Label))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") +
+  scale_fill_manual(values = c("Cover_Crop" = "#828282", 
+                               "Fallow" = "#d0d0d0"))+
+  coord_flip()+
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.25,0.50,0.75,1))+
+    theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("MTf_CoverIndicators_COG.jpg",newgraph,width=7,height =5)
+```
+```{r}
+##Figure S19.
+###Source: Nuccio, E.E., Starr, E., Karaoz, U., Brodie, E.L., Zhou, J., Tringe, S., Malmstrom, R.R., Woyke, T., Banfield, J.F., Firestone, M.K. and Pett-Ridge, J., 2019. Niche differentiation is spatially and temporally regulated in the rhizosphere. bioRxiv, p.611863.
+cput<-read.csv("CAZyPutative.csv")
+abunplot <- ggplot(data=cput, aes(x=Substrate, y=count, fill=Kingdom))
+newgraph = abunplot +
+  geom_bar(stat="identity",position="fill") +
+  facet_grid(.~Sample_Type)+
+  scale_fill_manual(values = c("Bacteria" = "red", 
+                               "Fungi" = "darkblue"))+
+  coord_flip()+
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.25,0.50,0.75,1))+
+    theme(text=element_blank(),
+        legend.position = "none",
+        panel.grid = element_blank())
+ggsave("CAZy_putativesubstrates.jpg",newgraph,width=7,height =5)
+```
+```{r}
+##Figure S20.
+###Created with Biorender.com
+```
